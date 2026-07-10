@@ -1,5 +1,3 @@
-from typing import List
-
 class Client:
     allowed_statuses = ["prospect", "active", "paused", "closed"]
     allowed_engagement_types = ["coo", "cpo", "advisor"]
@@ -20,7 +18,8 @@ class Client:
 
     @staticmethod
     def _validate_email(email: str) -> str:
-        if "@" not in email or "." not in email.split("@")[1]:
+        local_part, domain = email.split("@")
+        if not local_part or not domain or " " in email or "." not in domain or len(domain.split(".")[-1]) < 2:
             raise ValueError(f"Invalid email address: {email}")
         return email
 
