@@ -1,8 +1,15 @@
-class Client:
-    allowed_statuses = ["prospect", "active", "paused", "closed"]
-    allowed_engagement_types = ["coo", "cpo", "advisor"]
+import re
 
-    def __init__(self, name: str, company: str, email: str, status: str, engagement_type: str):
+_EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
+_ALLOWED_STATUSES = ("prospect", "active", "paused", "closed")
+_ALLOWED_ENGAGEMENT_TYPES = ("coo", "cpo", "advisor")
+
+
+class Client:
+    """A CRM client for a fractional COO/CPO engagement."""
+
+    def __init__(self, name: str, company: str, email: str,
+                 status: str, engagement_type: str) -> None:
         self.name = self._validate_name(name)
         self.company = company
         self.email = self._validate_email(email)
@@ -11,26 +18,29 @@ class Client:
 
     @staticmethod
     def _validate_name(name: str) -> str:
+        """Return the stripped name; raise ValueError if empty."""
         name = name.strip()
         if not name:
-            raise ValueError("Name cannot be empty")
+            raise ValueError("name cannot be empty")
         return name
 
     @staticmethod
     def _validate_email(email: str) -> str:
-        local_part, domain = email.split("@")
-        if not local_part or not domain or " " in email or "." not in domain or len(domain.split(".")[-1]) < 2:
-            raise ValueError(f"Invalid email address: {email}")
+        """Return email if it is a valid address; else raise ValueError."""
+        if not _EMAIL_RE.match(email):
+            raise ValueError(f"invalid email address: {email!r}")
         return email
 
     @staticmethod
     def _validate_status(status: str) -> str:
-        if status not in Client.allowed_statuses:
-            raise ValueError(f"Invalid status: {status}")
+        """Return status if it is an allowed value; else raise ValueError."""
+        if status not in _ALLOWED_STATUSES:
+            raise ValueError(f"invalid status: {status!r}")
         return status
 
     @staticmethod
     def _validate_engagement_type(engagement_type: str) -> str:
-        if engagement_type not in Client.allowed_engagement_types:
-            raise ValueError(f"Invalid engagement type: {engagement_type}")
+        """Return engagement_type if it is an allowed value; else raise ValueError."""
+        if engagement_type not in _ALLOWED_ENGAGEMENT_TYPES:
+            raise ValueError(f"invalid engagement type: {engagement_type!r}")
         return engagement_type
