@@ -4,7 +4,7 @@ class Engagement:
     """An engagement model with validation."""
 
     def __init__(self, client_email: str, role: str, monthly_rate: float,
-                 start_date: str, end_date: str = None, status: str) -> None:
+                 start_date: str, status: str, end_date: str = None) -> None:
         self.client_email = self._validate_client_email(client_email)
         self.role = self._validate_role(role)
         self.monthly_rate = self._validate_monthly_rate(monthly_rate)
