@@ -1,4 +1,5 @@
 import datetime
+import re
 
 class Engagement:
     """An engagement model with validation."""
@@ -8,14 +9,22 @@ class Engagement:
         self.client_email = self._validate_client_email(client_email)
         self.role = self._validate_role(role)
         self.monthly_rate = self._validate_monthly_rate(monthly_rate)
-        self.start_date = self._validate_start_date(start_date)
-        self.end_date = self._validate_end_date(end_date, start_date)
+        self.start_date_str = start_date
+        self.start_date = datetime.date.fromisoformat(start_date)
+        self.end_date_str = end_date
+        if end_date is not None:
+            self.end_date = datetime.date.fromisoformat(end_date)
+        else:
+            self.end_date = None
         self.status = self._validate_status(status)
 
     @staticmethod
     def _validate_client_email(email: str) -> str:
         """Return email if it is a valid address; else raise ValueError."""
-        return email.strip()
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, email):
+            raise ValueError(f"invalid email: {email!r}")
+        return email
 
     @staticmethod
     def _validate_role(role: str) -> str:
