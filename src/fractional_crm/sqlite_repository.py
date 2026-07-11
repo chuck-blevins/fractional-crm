@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Dict, List
+from typing import List
 from fractional_crm.client import Client
 from fractional_crm.engagement import Engagement
 
