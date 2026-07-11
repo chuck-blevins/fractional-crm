@@ -44,3 +44,18 @@ class Client:
         if engagement_type not in _ALLOWED_ENGAGEMENT_TYPES:
             raise ValueError(f"invalid engagement type: {engagement_type!r}")
         return engagement_type
+
+    def transition_to(self, new_status: str) -> None:
+        """Transition the client's status to a new status if allowed; otherwise raise ValueError."""
+        current_status = self.status
+        allowed_transitions = {
+            "prospect": ["active"],
+            "active": ["paused", "closed"],
+            "paused": ["active", "closed"],
+            "closed": []
+        }
+
+        if new_status in allowed_transitions.get(current_status, []):
+            self.status = new_status
+        else:
+            raise ValueError(f"Invalid transition from {current_status} to {new_status}")
