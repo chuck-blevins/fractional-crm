@@ -18,3 +18,6 @@
 ## CRB-10 outcome — 2026-07-11
 - Two bounces couldn't get "store the ISO string, still validate ordering" right (model created duplicate _str attrs and dropped the end>=start check). Reviewer finished.
 - TAKEAWAY: when a task needs a field validated one way but stored another (parse-to-check, store-original), spell out BOTH explicitly and keep all prior constraints in the retry message, or expect to finish it.
+
+## CRB-12 (SQLite persistence) — 2026-07-11 (reviewer fix)
+- REPEAT OFFENSE (3rd time): model imported `from typing import Dict, List` but used only List. Reviewer removed the unused `Dict`. Import ONLY names actually referenced.
