@@ -1,6 +1,7 @@
 from typing import List, Dict
 import csv
 import io
+import json
 from fractional_crm.client import Client
 
 class ImportResult:
