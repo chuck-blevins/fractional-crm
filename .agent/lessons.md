@@ -21,3 +21,6 @@
 
 ## CRB-12 (SQLite persistence) — 2026-07-11 (reviewer fix)
 - REPEAT OFFENSE (3rd time): model imported `from typing import Dict, List` but used only List. Reviewer removed the unused `Dict`. Import ONLY names actually referenced.
+
+## CRB-2 (Team/TeamMember) — 2026-07-11 (reviewer cleanup)
+- Model reached green but pulled in `from collections import OrderedDict` where a plain dict suffices (Python 3.12 preserves insertion order, matching repository.py). Prefer the existing plain-dict idiom; do not add OrderedDict for ordering alone.
