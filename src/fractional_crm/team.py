@@ -1,6 +1,5 @@
 from typing import Dict, List
 from collections import OrderedDict
-import re
 
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
 _ALLOWED_ROLES = ("admin", "member", "guest")
@@ -76,3 +75,10 @@ class Team:
         """Return members with the specified role in insertion order. Raises ValueError if invalid role."""
         self._validate_role(role)
         return [member for member in self.members.values() if member.role == role]
+
+    @staticmethod
+    def _validate_role(role: str) -> str:
+        """Return role if it is an allowed value; else raise ValueError."""
+        if role not in _ALLOWED_ROLES:
+            raise ValueError(f"invalid role: {role!r}")
+        return role
