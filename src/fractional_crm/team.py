@@ -1,5 +1,6 @@
 from typing import Dict, List
 from collections import OrderedDict
+import re
 
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
 _ALLOWED_ROLES = ("admin", "member", "guest")
