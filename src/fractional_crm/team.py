@@ -1,5 +1,4 @@
 from typing import Dict, List
-from collections import OrderedDict
 import re
 
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
@@ -42,7 +41,7 @@ class Team:
 
     def __init__(self, name: str) -> None:
         self.name = self._validate_name(name)
-        self.members: Dict[str, TeamMember] = OrderedDict()
+        self.members: Dict[str, TeamMember] = {}
 
     @staticmethod
     def _validate_name(name: str) -> str:
@@ -51,6 +50,13 @@ class Team:
         if not name:
             raise ValueError("name cannot be empty")
         return name
+
+    @staticmethod
+    def _validate_role(role: str) -> str:
+        """Return role if it is an allowed value; else raise ValueError."""
+        if role not in _ALLOWED_ROLES:
+            raise ValueError(f"invalid role: {role!r}")
+        return role
 
     def add_member(self, member: TeamMember) -> None:
         """Add a member to the team. Raises ValueError if duplicate email."""
@@ -73,13 +79,6 @@ class Team:
         return list(self.members.values())
 
     def members_with_role(self, role: str) -> List[TeamMember]:
-        """Return members with the specified role in insertion order. Raises ValueError if invalid role."""
+        """Return members with the given role in insertion order. Raises ValueError if invalid role."""
         self._validate_role(role)
         return [member for member in self.members.values() if member.role == role]
-
-    @staticmethod
-    def _validate_role(role: str) -> str:
-        """Return role if it is an allowed value; else raise ValueError."""
-        if role not in _ALLOWED_ROLES:
-            raise ValueError(f"invalid role: {role!r}")
-        return role
