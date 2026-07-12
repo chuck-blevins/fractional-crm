@@ -24,3 +24,6 @@
 
 ## CRB-2 (Team/TeamMember) — 2026-07-11 (reviewer cleanup)
 - Model reached green but pulled in `from collections import OrderedDict` where a plain dict suffices (Python 3.12 preserves insertion order, matching repository.py). Prefer the existing plain-dict idiom; do not add OrderedDict for ordering alone.
+
+## CRB-4 (client data importer) — 2026-07-11 (reviewer cleanup)
+- REPEAT OFFENSE (4th time): model wrote `from typing import List, Dict` but never referenced `Dict`. Reviewer removed it. Import ONLY names actually used — `csv.DictReader` is not a `typing.Dict` reference.
