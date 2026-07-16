@@ -37,3 +37,11 @@
   fenced block preceded by its path; do not run shell commands or give environment advice"). Pass the
   target TEST file as `--read` so the contract is unambiguous; drop the long spec/conventions for
   micro-tasks (extra tokens distract the 7B).
+
+## CRB-21 (config/deps wiring) — 2026-07-16
+- Green on the FIRST try WITHOUT `--auto-test` — confirms the CRB-20 fix (no auto-test on greenfield).
+- BUT the model copied a literal `# one-line docstring` placeholder from the prompt into the code as a
+  comment instead of writing a real docstring (convention violation caught at the review gate).
+- LESSON (prompting): never put placeholder tokens like `# one-line docstring` in the contract — the
+  7B reproduces prompt text verbatim. Give the ACTUAL docstring text you want, or say "each function
+  begins with a triple-quoted one-line docstring describing its return value."
