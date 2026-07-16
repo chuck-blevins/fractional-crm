@@ -27,3 +27,13 @@
 
 ## CRB-4 (client data importer) — 2026-07-11 (reviewer cleanup)
 - REPEAT OFFENSE (4th time): model wrote `from typing import List, Dict` but never referenced `Dict`. Reviewer removed it. Import ONLY names actually used — `csv.DictReader` is not a `typing.Dict` reference.
+
+## CRB-20 (FastAPI scaffold) — 2026-07-16
+- With `--auto-test` ON for a GREENFIELD file-creation task, qwen2.5-coder-7b saw the red pytest
+  output, latched onto "environment problem", and emitted conversational venv/pytest advice instead
+  of file listings — never conforming to aider's whole-edit format ("No filename provided before ```").
+- FIX (loop rule): for creating NEW files, run aider WITHOUT `--auto-test` — generate first, run the
+  test yourself after. Keep the message tiny and format-forward (say "output ONLY each file as a
+  fenced block preceded by its path; do not run shell commands or give environment advice"). Pass the
+  target TEST file as `--read` so the contract is unambiguous; drop the long spec/conventions for
+  micro-tasks (extra tokens distract the 7B).
