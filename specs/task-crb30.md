@@ -1,30 +1,23 @@
-# CRB-30 — Auth: NextAuth (Auth.js) Google OAuth + session-gated routes
+# CRB-30 — API: CSV import/export endpoints
 
-**Phase 3. Depends on: CRB-19, CRB-20. Note: OAuth wiring — reviewer/Claude likely finishes.**
+**Linear:** [CRB-30](https://linear.app/crbc/issue/CRB-30/api-csv-importexport-endpoints)
 
-Add authentication for the **app user** (the fractional COO/CPO operating the CRM) via NextAuth
-with Google OAuth. This replaces the Python per-client auth modules (`passcode.py`,
-`verification.py`, `sso.py`) at the app boundary. Those per-client mechanisms are NOT ported to
-the UI in this migration — capture that decision in the worklog (they can return later as a
-"client portal" epic if wanted).
+**Phase 2. Depends on: CRB-25, CRB-26.**
+
+Wire the CSV/JSON import + export from CRB-25 to HTTP.
 
 ## Deliverables
-- NextAuth v5 (Auth.js) config `src/lib/auth.ts` with the Google provider; Prisma adapter
-  (add the Auth.js models — `User`, `Account`, `Session`, `VerificationToken` — to
-  `prisma/schema.prisma` + a migration).
-- `src/app/api/auth/[...nextauth]/route.ts` handler.
-- `middleware.ts`: gate everything except `/`, `/api/health`, `/api/auth/**`, and static assets.
-  Unauthenticated API calls → `401`; unauthenticated page loads → redirect to sign-in.
-- `.env.example`: add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
-- `auth()` helper usable in server components and route handlers to read the session.
+- `src/app/api/clients/export/route.ts`: `GET` → `200` with `Content-Type: text/csv` and
+  `Content-Disposition: attachment; filename="clients.csv"`; body from `exportClientsCsv`
+  (formula-injection escaping already applied).
+- `src/app/api/clients/import/route.ts`: `POST` (multipart file **or** raw CSV/JSON body) →
+  `200 { imported, errors }` using `ClientImporter`. Malformed uploads → `400`.
+- Cap upload size (reject > 5 MB with `413`).
 
 ## Tests
-- `tests/unit/auth/middleware.test.ts` — a request without a session to a protected API route
-  gets `401`; `/api/health` stays public.
-- `e2e/auth.spec.ts` (Playwright) — visiting a protected page while signed out redirects to
-  sign-in. (Mock/stub the provider; do not hit Google in CI.)
+- `tests/unit/api/clients-csv.test.ts` — export headers + body, import with a mixed valid/invalid
+  payload returning per-row errors, round-trip (export then re-import), oversize `413`.
 
 ## Definition of Done
-- `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean; migration applies.
-- No secrets committed. Annotation + `docs/worklog/CRB-30.md` per conventions (include the
-  "per-client auth intentionally deferred" decision).
+- `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.
+- Annotation + `docs/worklog/CRB-30.md` per conventions.

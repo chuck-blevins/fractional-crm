@@ -1,18 +1,21 @@
-# CRB-34 — UI: Interactions timeline per client
+# CRB-34 — UI: Engagements + run-rate / reporting widgets
 
-**Phase 4. Depends on: CRB-27, CRB-31.**
+**Linear:** [CRB-34](https://linear.app/crbc/issue/CRB-34/ui-engagements-run-rate-reporting-widgets)
+
+**Phase 4. Depends on: CRB-27, CRB-24, CRB-32.**
 
 ## Deliverables
-- On the client detail view, a timeline of interactions (newest first) from
-  `GET /api/clients/[email]/interactions`, grouped/sorted by date.
-- A "log interaction" form (kind select: call/email/meeting/note; date; summary required)
-  posting to the interactions endpoint; the new entry appears at the top on success.
-- Empty state when a client has no interactions.
+- `src/app/(dashboard)/engagements/page.tsx`: list (filterable by client), create/edit forms
+  posting to the Engagements API. Enforce `monthlyRate > 0` and `endDate >= startDate` in the form.
+- Dashboard widgets (fill the CRB-32 slots): **Active engagements** count and **Monthly run-rate**
+  from `getReportingSummary()` / a `/api/reporting/summary` route. Format currency; run-rate `$0`
+  when none active.
+- A small chart is optional; correctness of the numbers is the requirement.
 
 ## Tests
-- `tests/unit/ui/interactions.test.tsx` — timeline renders newest-first from a mocked fetch;
-  empty summary is rejected inline.
-- `e2e/interactions.spec.ts` — log an interaction; it appears at the top of the timeline.
+- `tests/unit/ui/engagements.test.tsx` — form rejects `monthlyRate <= 0` and `endDate < startDate`
+  inline; widgets render the run-rate from a mocked summary.
+- `e2e/engagements.spec.ts` — add an active engagement; the run-rate widget increases accordingly.
 
 ## Definition of Done
 - `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.

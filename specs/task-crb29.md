@@ -1,20 +1,28 @@
-# CRB-29 — API: CSV import/export endpoints
+# CRB-29 — API: Teams + Integrations
 
-**Phase 2. Depends on: CRB-24, CRB-25.**
+**Linear:** [CRB-29](https://linear.app/crbc/issue/CRB-29/api-teams-integrations)
 
-Wire the CSV/JSON import + export from CRB-24 to HTTP.
+**Phase 2. Depends on: CRB-23.**
+
+Persist and expose Teams/TeamMembers and Integrations. Port `team.py` and `integration.py`.
+Source of truth: `tests/test_team.py`, `test_integration.py`.
 
 ## Deliverables
-- `src/app/api/clients/export/route.ts`: `GET` → `200` with `Content-Type: text/csv` and
-  `Content-Disposition: attachment; filename="clients.csv"`; body from `exportClientsCsv`
-  (formula-injection escaping already applied).
-- `src/app/api/clients/import/route.ts`: `POST` (multipart file **or** raw CSV/JSON body) →
-  `200 { imported, errors }` using `ClientImporter`. Malformed uploads → `400`.
-- Cap upload size (reject > 5 MB with `413`).
+- `src/server/teamService.ts`: create team; `addMember` (role in admin/member/guest; reject
+  duplicate `(teamId,email)` with `ValidationError`); `membersWithRole(teamId, role)`.
+- `src/server/integrationService.ts`: `connect(input)` (provider/status from fixed sets;
+  reject duplicate provider); `disconnect(provider)` and `get(provider)` → `NotFoundError` if
+  absent; `markSynced(provider, ts)` sets `lastSyncedAt` and `status="connected"`.
+- Route handlers:
+  - `src/app/api/teams/route.ts` (`GET`/`POST`), `src/app/api/teams/[id]/members/route.ts` (`GET`/`POST`).
+  - `src/app/api/integrations/route.ts` (`GET`/`POST` connect),
+    `src/app/api/integrations/[provider]/route.ts` (`GET`/`DELETE`),
+    `src/app/api/integrations/[provider]/sync/route.ts` (`POST` markSynced).
+- Reuse `toErrorResponse` + Zod.
 
 ## Tests
-- `tests/unit/api/clients-csv.test.ts` — export headers + body, import with a mixed valid/invalid
-  payload returning per-row errors, round-trip (export then re-import), oversize `413`.
+- `tests/unit/api/teams.test.ts` and `integrations.test.ts` — member roles + duplicate rejection;
+  connect/get/disconnect/markSynced, `404` on unknown provider, enum rejection.
 
 ## Definition of Done
 - `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.

@@ -1,40 +1,38 @@
-# CRB-21 — Domain layer in TypeScript (validators + status state-machine)
+# CRB-21 — Prisma schema + Postgres (core entities) + migrations + seed
 
-**Phase 0. Depends on: CRB-19. This is a pure-function story — the local model's sweet spot.**
+**Linear:** [CRB-21](https://linear.app/crbc/issue/CRB-21/prisma-schema-postgres-core-entities-migrations-seed)
 
-Port every Python validation rule to pure TypeScript in `src/domain/`. No I/O, no Prisma —
-just types, Zod schemas, and pure functions. Behavior must match `src/fractional_crm/`
-and its tests exactly. Source of truth: `client.py`, `engagement.py`, `interaction.py`,
-`team.py`, `integration.py`, and `tests/test_client.py`, `test_engagement.py`,
-`test_interaction.py`, `test_team.py`, `test_integration.py`, `test_status_transitions.py`.
+**Phase 0. Depends on: CRB-20. Note: DB wiring — reviewer/Claude may finish.**
 
-## Deliverables (in `src/domain/`)
-- `errors.ts`: `ValidationError` (maps Python `ValueError`) and `NotFoundError` (maps `KeyError`).
-- `email.ts`: `assertValidEmail(email)` / `isValidEmail(email)` — reject empty/whitespace local
-  part, empty domain, any whitespace, domain without a dot, TLD < 2 chars. Regex-based
-  (see conventions — a naive check fails known cases like `a@.co`, `a b@x.io`).
-- `client.ts`: `ClientSchema` (Zod) + `parseClient(input): Client`. Fields: `name` (non-empty
-  after trim), `company`, `email` (valid), `status` (ClientStatus), `engagementType`
-  (coo/cpo/advisor). Throw `ValidationError` on any invalid field.
-- `status.ts`: `transitionClientStatus(current, next)` — allow only the transitions in
-  conventions; otherwise throw `ValidationError`. Return the new status.
-- `engagement.ts`: `parseEngagement(input)`. `monthlyRate` > 0 (int or float);
-  `startDate`/`endDate` are ISO `YYYY-MM-DD` strings **stored verbatim** but validated by
-  parsing; if `endDate` present it must be `>= startDate`; `role` in coo/cpo/advisor;
-  `status` in proposed/active/completed/cancelled; valid `clientEmail`.
-- `interaction.ts`: `parseInteraction(input)`. `kind` in call/email/meeting/note; `date` ISO
-  date; `summary` non-empty after trim; valid `clientEmail`.
-- `team.ts`: `Team` with `addMember(member)` and `membersWithRole(role)`; `TeamMember` role in
-  admin/member/guest. Preserve insertion order (plain array/Map — no OrderedMap equivalents).
-- `integration.ts`: `Integration` (provider/status/externalId/lastSyncedAt) with `markSynced(ts)`;
-  `IntegrationRegistry` with `connect`/`disconnect`/`get` — `get`/`disconnect` throw
-  `NotFoundError` when absent; providers/status from the fixed sets.
+Model the CRM domain in Prisma against PostgreSQL. Enum values are fixed by
+`.agent/conventions.md` and must match the Python code exactly.
+
+## Deliverables
+- `prisma/schema.prisma` with `provider = "postgresql"`, `DATABASE_URL` from env.
+- Prisma enums: `ClientStatus`, `EngagementRole` (coo/cpo/advisor), `EngagementStatus`,
+  `InteractionKind`, `MemberRole`, `IntegrationProvider`, `IntegrationStatus`.
+- Models:
+  - `Client`: `id` (cuid), `name`, `company`, `email @unique`, `status ClientStatus`,
+    `engagementType EngagementRole`, `createdAt`, `updatedAt`. `email` is the natural key
+    used elsewhere.
+  - `Engagement`: `id`, `clientEmail` + relation to `Client.email`, `role EngagementRole`,
+    `monthlyRate Decimal @db.Decimal(12,2)`, `startDate DateTime @db.Date`,
+    `endDate DateTime? @db.Date`, `status EngagementStatus`, timestamps.
+  - `Interaction`: `id`, `clientEmail` + relation, `date DateTime @db.Date`,
+    `kind InteractionKind`, `summary`, `createdAt`. Index `(clientEmail, date desc)`.
+  - `Team`: `id`, `name`. `TeamMember`: `id`, `teamId` + relation, `name`,
+    `email`, `role MemberRole`. Unique `(teamId, email)`.
+  - `Integration`: `id`, `provider IntegrationProvider @unique`, `externalId`,
+    `status IntegrationStatus @default(connected)`, `lastSyncedAt DateTime?`.
+- `prisma/seed.ts`: idempotent seed — one sample client + one active engagement.
+- `src/lib/prisma.ts`: a singleton `PrismaClient` (avoid hot-reload connection storms).
+- `docker-compose.yml` (dev/test Postgres 16 on 5432) so migrations and later repo tests can run.
 
 ## Tests
-Ported unit tests under `tests/unit/domain/` — one file per module — covering the same cases
-as the Python tests (valid construction, each rejection case, each allowed/denied transition,
-`endDate >= startDate`, duplicate/missing registry keys, ordering).
+- `tests/unit/schema.test.ts` — import the generated enums and assert each contains exactly
+  the allowed values from conventions (guards against typos/drift in enum values).
 
 ## Definition of Done
-- `pnpm test` green for `tests/unit/domain/**`; `pnpm typecheck` + `pnpm lint` clean.
-- No dependency on Prisma or Next. Annotation + `docs/worklog/CRB-21.md` per conventions.
+- `pnpm prisma validate` clean; `pnpm prisma migrate dev` applies to a fresh Postgres;
+  `pnpm db:seed` runs twice without error (idempotent). `pnpm typecheck` clean.
+- Annotation + `docs/worklog/CRB-21.md` per conventions.

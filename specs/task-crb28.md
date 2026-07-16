@@ -1,26 +1,22 @@
-# CRB-28 — API: Teams + Integrations
+# CRB-28 — API: Interactions (log + list newest-first)
 
-**Phase 2. Depends on: CRB-22.**
+**Linear:** [CRB-28](https://linear.app/crbc/issue/CRB-28/api-interactions-log-list-newest-first)
 
-Persist and expose Teams/TeamMembers and Integrations. Port `team.py` and `integration.py`.
-Source of truth: `tests/test_team.py`, `test_integration.py`.
+**Phase 2. Depends on: CRB-23.**
+
+Persist interactions and expose them per client. Port `interaction.py` / `interaction_log.py`
+behavior: `list_for_client` returns **newest first**. Source of truth: `tests/test_interaction.py`.
 
 ## Deliverables
-- `src/server/teamService.ts`: create team; `addMember` (role in admin/member/guest; reject
-  duplicate `(teamId,email)` with `ValidationError`); `membersWithRole(teamId, role)`.
-- `src/server/integrationService.ts`: `connect(input)` (provider/status from fixed sets;
-  reject duplicate provider); `disconnect(provider)` and `get(provider)` → `NotFoundError` if
-  absent; `markSynced(provider, ts)` sets `lastSyncedAt` and `status="connected"`.
-- Route handlers:
-  - `src/app/api/teams/route.ts` (`GET`/`POST`), `src/app/api/teams/[id]/members/route.ts` (`GET`/`POST`).
-  - `src/app/api/integrations/route.ts` (`GET`/`POST` connect),
-    `src/app/api/integrations/[provider]/route.ts` (`GET`/`DELETE`),
-    `src/app/api/integrations/[provider]/sync/route.ts` (`POST` markSynced).
-- Reuse `toErrorResponse` + Zod.
+- `src/server/interactionService.ts`: `add(input)` (validate via `parseInteraction`, require the
+  client to exist → else `NotFoundError`); `listForClient(email)` → newest first (`date desc`,
+  then `createdAt desc` as tiebreaker).
+- `src/app/api/clients/[email]/interactions/route.ts`: `GET` → `200` newest-first;
+  `POST` → `201`, `400` invalid, `404` if client missing.
 
 ## Tests
-- `tests/unit/api/teams.test.ts` and `integrations.test.ts` — member roles + duplicate rejection;
-  connect/get/disconnect/markSynced, `404` on unknown provider, enum rejection.
+- `tests/unit/api/interactions.test.ts` — create + list ordering (newest first), `400` on bad
+  `kind`/empty summary, `404` on unknown client.
 
 ## Definition of Done
 - `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.

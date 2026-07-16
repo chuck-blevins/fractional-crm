@@ -1,22 +1,32 @@
-# CRB-23 — Reporting service
+# CRB-23 — Repository/service layer over Prisma (clients, engagements)
+
+**Linear:** [CRB-23](https://linear.app/crbc/issue/CRB-23/repositoryservice-layer-over-prisma-clients-engagements)
 
 **Phase 1. Depends on: CRB-21, CRB-22.**
 
-Port `reporting.py` (`active_engagements`, `monthly_run_rate`). Pure functions over a list of
-engagements. Source of truth: `reporting.py`, `tests/test_reporting.py`.
+Port the Python repository semantics to Prisma-backed services. The Python interface is
+`add / get / list / update / delete`; `add` raises on duplicate key, the rest raise when the
+key is missing. Source of truth: `repository.py`, `sqlite_repository.py`, and
+`tests/test_repository.py`, `test_sqlite_repository.py`.
 
-## Deliverables (in `src/server/reporting.ts`)
-- `activeEngagements(engagements)` — return only those with `status === "active"`,
-  **input order preserved**.
-- `monthlyRunRate(engagements)` — sum of `monthlyRate` over active engagements; `0` when none.
-  Use a decimal-safe sum (avoid float drift; monthlyRate is `Decimal` from Prisma).
-- A thin `getReportingSummary()` that reads engagements via `engagementService.list()` and
-  returns `{ activeCount, monthlyRunRate }` for the dashboard (CRB-33).
+## Deliverables (in `src/server/`)
+- `clientService.ts`:
+  - `add(input)` — validate via `parseClient` (CRB-22), then create. Throw `ValidationError`
+    if a client with that `email` already exists (map Python duplicate-key `ValueError`).
+  - `get(email)` — throw `NotFoundError` if absent.
+  - `list()` — all clients, stable order (createdAt asc).
+  - `update(input)` — throw `NotFoundError` if absent; re-validate.
+  - `delete(email)` — throw `NotFoundError` if absent.
+  - `transitionStatus(email, next)` — load, apply `transitionClientStatus` (CRB-22), persist.
+- `engagementService.ts`: same shape, keyed by `clientEmail`; validate via `parseEngagement`.
+- All DB access through the `src/lib/prisma.ts` singleton. Services are pure of HTTP concerns.
 
 ## Tests
-- `tests/unit/server/reporting.test.ts` — ported cases: filtering, order preservation, empty →
-  `0`, mixed statuses, and a run-rate total matching the Python fixture.
+- `tests/unit/server/clientService.test.ts` and `engagementService.test.ts` — integration tests
+  against the docker Postgres (or a per-test schema), covering: add/get/list/update/delete,
+  duplicate-key rejection, missing-key `NotFoundError`, and a full status-transition round-trip.
+  Use a `beforeEach` truncate so tests are isolated. (A DB is required — see CRB-21 compose.)
 
 ## Definition of Done
-- `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.
+- `pnpm test` green with the test DB up; `pnpm typecheck` + `pnpm lint` clean.
 - Annotation + `docs/worklog/CRB-23.md` per conventions.

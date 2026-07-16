@@ -1,30 +1,42 @@
-# CRB-22 — Repository/service layer over Prisma (clients, engagements)
+# CRB-22 — Domain layer in TypeScript (validators + status state-machine)
 
-**Phase 1. Depends on: CRB-20, CRB-21.**
+**Linear:** [CRB-22](https://linear.app/crbc/issue/CRB-22/domain-layer-in-typescript-validators-status-state-machine)
 
-Port the Python repository semantics to Prisma-backed services. The Python interface is
-`add / get / list / update / delete`; `add` raises on duplicate key, the rest raise when the
-key is missing. Source of truth: `repository.py`, `sqlite_repository.py`, and
-`tests/test_repository.py`, `test_sqlite_repository.py`.
+**Phase 0. Depends on: CRB-20. This is a pure-function story — the local model's sweet spot.**
 
-## Deliverables (in `src/server/`)
-- `clientService.ts`:
-  - `add(input)` — validate via `parseClient` (CRB-21), then create. Throw `ValidationError`
-    if a client with that `email` already exists (map Python duplicate-key `ValueError`).
-  - `get(email)` — throw `NotFoundError` if absent.
-  - `list()` — all clients, stable order (createdAt asc).
-  - `update(input)` — throw `NotFoundError` if absent; re-validate.
-  - `delete(email)` — throw `NotFoundError` if absent.
-  - `transitionStatus(email, next)` — load, apply `transitionClientStatus` (CRB-21), persist.
-- `engagementService.ts`: same shape, keyed by `clientEmail`; validate via `parseEngagement`.
-- All DB access through the `src/lib/prisma.ts` singleton. Services are pure of HTTP concerns.
+Port every Python validation rule to pure TypeScript in `src/domain/`. No I/O, no Prisma —
+just types, Zod schemas, and pure functions. Behavior must match `src/fractional_crm/`
+and its tests exactly. Source of truth: `client.py`, `engagement.py`, `interaction.py`,
+`team.py`, `integration.py`, and `tests/test_client.py`, `test_engagement.py`,
+`test_interaction.py`, `test_team.py`, `test_integration.py`, `test_status_transitions.py`.
+
+## Deliverables (in `src/domain/`)
+- `errors.ts`: `ValidationError` (maps Python `ValueError`) and `NotFoundError` (maps `KeyError`).
+- `email.ts`: `assertValidEmail(email)` / `isValidEmail(email)` — reject empty/whitespace local
+  part, empty domain, any whitespace, domain without a dot, TLD < 2 chars. Regex-based
+  (see conventions — a naive check fails known cases like `a@.co`, `a b@x.io`).
+- `client.ts`: `ClientSchema` (Zod) + `parseClient(input): Client`. Fields: `name` (non-empty
+  after trim), `company`, `email` (valid), `status` (ClientStatus), `engagementType`
+  (coo/cpo/advisor). Throw `ValidationError` on any invalid field.
+- `status.ts`: `transitionClientStatus(current, next)` — allow only the transitions in
+  conventions; otherwise throw `ValidationError`. Return the new status.
+- `engagement.ts`: `parseEngagement(input)`. `monthlyRate` > 0 (int or float);
+  `startDate`/`endDate` are ISO `YYYY-MM-DD` strings **stored verbatim** but validated by
+  parsing; if `endDate` present it must be `>= startDate`; `role` in coo/cpo/advisor;
+  `status` in proposed/active/completed/cancelled; valid `clientEmail`.
+- `interaction.ts`: `parseInteraction(input)`. `kind` in call/email/meeting/note; `date` ISO
+  date; `summary` non-empty after trim; valid `clientEmail`.
+- `team.ts`: `Team` with `addMember(member)` and `membersWithRole(role)`; `TeamMember` role in
+  admin/member/guest. Preserve insertion order (plain array/Map — no OrderedMap equivalents).
+- `integration.ts`: `Integration` (provider/status/externalId/lastSyncedAt) with `markSynced(ts)`;
+  `IntegrationRegistry` with `connect`/`disconnect`/`get` — `get`/`disconnect` throw
+  `NotFoundError` when absent; providers/status from the fixed sets.
 
 ## Tests
-- `tests/unit/server/clientService.test.ts` and `engagementService.test.ts` — integration tests
-  against the docker Postgres (or a per-test schema), covering: add/get/list/update/delete,
-  duplicate-key rejection, missing-key `NotFoundError`, and a full status-transition round-trip.
-  Use a `beforeEach` truncate so tests are isolated. (A DB is required — see CRB-20 compose.)
+Ported unit tests under `tests/unit/domain/` — one file per module — covering the same cases
+as the Python tests (valid construction, each rejection case, each allowed/denied transition,
+`endDate >= startDate`, duplicate/missing registry keys, ordering).
 
 ## Definition of Done
-- `pnpm test` green with the test DB up; `pnpm typecheck` + `pnpm lint` clean.
-- Annotation + `docs/worklog/CRB-22.md` per conventions.
+- `pnpm test` green for `tests/unit/domain/**`; `pnpm typecheck` + `pnpm lint` clean.
+- No dependency on Prisma or Next. Annotation + `docs/worklog/CRB-22.md` per conventions.

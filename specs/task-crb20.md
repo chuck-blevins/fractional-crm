@@ -1,36 +1,31 @@
-# CRB-20 — Prisma schema + Postgres (core entities) + migrations + seed
+# CRB-20 — Scaffold Next.js + TypeScript + tooling
 
-**Phase 0. Depends on: CRB-19. Note: DB wiring — reviewer/Claude may finish.**
+**Linear:** [CRB-20](https://linear.app/crbc/issue/CRB-20/scaffold-nextjs-typescript-tooling)
 
-Model the CRM domain in Prisma against PostgreSQL. Enum values are fixed by
-`.agent/conventions.md` and must match the Python code exactly.
+**Phase 0 (foundation). Depends on: none. Note: scaffolding — reviewer/Claude may finish; not TDD-shaped.**
+
+Stand up a Next.js 15 (App Router) + TypeScript project at the repo root, alongside the
+existing Python code (which stays until CRB-38). This is the base every later story builds on.
 
 ## Deliverables
-- `prisma/schema.prisma` with `provider = "postgresql"`, `DATABASE_URL` from env.
-- Prisma enums: `ClientStatus`, `EngagementRole` (coo/cpo/advisor), `EngagementStatus`,
-  `InteractionKind`, `MemberRole`, `IntegrationProvider`, `IntegrationStatus`.
-- Models:
-  - `Client`: `id` (cuid), `name`, `company`, `email @unique`, `status ClientStatus`,
-    `engagementType EngagementRole`, `createdAt`, `updatedAt`. `email` is the natural key
-    used elsewhere.
-  - `Engagement`: `id`, `clientEmail` + relation to `Client.email`, `role EngagementRole`,
-    `monthlyRate Decimal @db.Decimal(12,2)`, `startDate DateTime @db.Date`,
-    `endDate DateTime? @db.Date`, `status EngagementStatus`, timestamps.
-  - `Interaction`: `id`, `clientEmail` + relation, `date DateTime @db.Date`,
-    `kind InteractionKind`, `summary`, `createdAt`. Index `(clientEmail, date desc)`.
-  - `Team`: `id`, `name`. `TeamMember`: `id`, `teamId` + relation, `name`,
-    `email`, `role MemberRole`. Unique `(teamId, email)`.
-  - `Integration`: `id`, `provider IntegrationProvider @unique`, `externalId`,
-    `status IntegrationStatus @default(connected)`, `lastSyncedAt DateTime?`.
-- `prisma/seed.ts`: idempotent seed — one sample client + one active engagement.
-- `src/lib/prisma.ts`: a singleton `PrismaClient` (avoid hot-reload connection storms).
-- `docker-compose.yml` (dev/test Postgres 16 on 5432) so migrations and later repo tests can run.
+- `package.json` (pnpm) with scripts: `dev`, `build`, `start`, `lint`, `typecheck`
+  (`tsc --noEmit`), `test` (vitest run), `test:watch`, `test:e2e` (playwright),
+  `db:migrate`, `db:seed`.
+- TypeScript **strict** (`tsconfig.json`: `strict`, `noUncheckedIndexedAccess`, `moduleResolution: bundler`).
+- Next.js App Router under `src/app/`. `next.config.mjs`, `output: "standalone"` (needed for the container).
+- ESLint (flat config, `no-unused-vars` = error) + Prettier.
+- Vitest config (`vitest.config.ts`, `vitest.setup.ts`) with a `tests/unit/` root; Playwright config with an `e2e/` root.
+- Directory skeleton: `src/app/`, `src/domain/`, `src/server/`, `src/lib/`, `tests/unit/`, `e2e/`.
+- `.env.example` documenting `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (values added in later stories).
+- Health route `src/app/api/health/route.ts` → `200 {"status":"ok"}`.
 
-## Tests
-- `tests/unit/schema.test.ts` — import the generated enums and assert each contains exactly
-  the allowed values from conventions (guards against typos/drift in enum values).
+## Tests (authored as failing scaffold before implementation)
+- `tests/unit/smoke.test.ts` — a trivial passing assertion (proves the runner works).
+- `tests/unit/health.test.ts` — imports the `GET` handler from the health route and asserts
+  it responds `200` with body `{ status: "ok" }`.
 
 ## Definition of Done
-- `pnpm prisma validate` clean; `pnpm prisma migrate dev` applies to a fresh Postgres;
-  `pnpm db:seed` runs twice without error (idempotent). `pnpm typecheck` clean.
-- Annotation + `docs/worklog/CRB-20.md` per conventions.
+- `pnpm install`, `pnpm typecheck`, `pnpm lint`, `pnpm test` all succeed.
+- Existing Python files untouched; `.gitignore` covers `node_modules/`, `.next/`, `coverage/`.
+- Annotation + `docs/worklog/CRB-20.md` per conventions. Update `.agent/conventions.md` is
+  already TS-oriented — do not revert it.

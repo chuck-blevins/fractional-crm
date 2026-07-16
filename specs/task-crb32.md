@@ -1,20 +1,22 @@
-# CRB-32 — UI: Clients (list / create / edit / status)
+# CRB-32 — UI: app shell, nav, auth-gated dashboard
 
-**Phase 4. Depends on: CRB-25, CRB-31.**
+**Linear:** [CRB-32](https://linear.app/crbc/issue/CRB-32/ui-app-shell-nav-auth-gated-dashboard)
+
+**Phase 4. Depends on: CRB-31.**
+
+The application frame every feature page renders inside.
 
 ## Deliverables
-- `src/app/(dashboard)/clients/page.tsx`: table of clients (name, company, email, status,
-  engagement type) from `GET /api/clients`.
-- Create + edit forms (client component) posting to the Clients API; inline field validation that
-  mirrors the domain rules (email, required name, enum selects). Server errors surfaced per-field.
-- A status control that only offers **allowed** next transitions for the current status
-  (drive it from the same transition map as `src/domain/status.ts`) and calls the status endpoint.
-- Optimistic or post-refresh list update; loading + error states.
+- `src/app/layout.tsx`: root layout, global styles, session provider.
+- A sidebar/topbar nav linking Clients, Engagements, Interactions, Teams, Integrations, Import/Export.
+- Signed-out state shows a "Sign in with Google" screen; signed-in shows the shell + the user's name/avatar + sign-out.
+- `src/app/(dashboard)/page.tsx`: dashboard placeholder with slots for the reporting widgets (filled in CRB-34).
+- Reusable primitives in `src/components/` (Button, Card, Table, form Field) — keep minimal and typed.
 
 ## Tests
-- `tests/unit/ui/clients.test.tsx` (RTL) — renders rows from a mocked fetch; submitting an invalid
-  email shows an inline error and does not call the API; the status control hides disallowed transitions.
-- `e2e/clients.spec.ts` — create a client, see it in the list, move it `active → paused`.
+- `tests/unit/ui/nav.test.tsx` (RTL) — nav renders all six links; sign-out control present when a
+  session is provided (mock the session).
+- `e2e/dashboard.spec.ts` — signed-in user lands on the dashboard and sees the nav.
 
 ## Definition of Done
 - `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.

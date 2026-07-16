@@ -1,20 +1,20 @@
-# CRB-35 — UI: Teams + Integrations
+# CRB-35 — UI: Interactions timeline per client
 
-**Phase 4. Depends on: CRB-28, CRB-31.**
+**Linear:** [CRB-35](https://linear.app/crbc/issue/CRB-35/ui-interactions-timeline-per-client)
+
+**Phase 4. Depends on: CRB-28, CRB-32.**
 
 ## Deliverables
-- `src/app/(dashboard)/teams/page.tsx`: list teams; view a team's members; add a member
-  (role select admin/member/guest); duplicate `(team,email)` surfaced as an inline error.
-- `src/app/(dashboard)/integrations/page.tsx`: list the fixed providers
-  (slack/github/gitlab/figma/intercom/zendesk) with connection status; connect (enter externalId),
-  disconnect, and "sync now" (calls markSynced, shows `lastSyncedAt`).
+- On the client detail view, a timeline of interactions (newest first) from
+  `GET /api/clients/[email]/interactions`, grouped/sorted by date.
+- A "log interaction" form (kind select: call/email/meeting/note; date; summary required)
+  posting to the interactions endpoint; the new entry appears at the top on success.
+- Empty state when a client has no interactions.
 
 ## Tests
-- `tests/unit/ui/teams.test.tsx` — add member happy path + duplicate error; role select limited to
-  the allowed set.
-- `tests/unit/ui/integrations.test.tsx` — connect/disconnect toggles status; sync updates the
-  last-synced label.
-- `e2e/integrations.spec.ts` — connect a provider, then disconnect it.
+- `tests/unit/ui/interactions.test.tsx` — timeline renders newest-first from a mocked fetch;
+  empty summary is rejected inline.
+- `e2e/interactions.spec.ts` — log an interaction; it appears at the top of the timeline.
 
 ## Definition of Done
 - `pnpm test` green; `pnpm typecheck` + `pnpm lint` clean.
