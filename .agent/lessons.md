@@ -60,3 +60,43 @@
   split into separate aider runs — (a) errors.py, (b) the single router file, (c) app.py include_router
   as its own edit — or accept reviewer authorship for routers until a stronger local model is used
   (qwen3.6-35b is available on .12 but slow/thinking). Single-file tool/function stories remain fine.
+
+## AIDER MULTI-FILE FAILURE — diagnosed 2026-07-16 (from CRB-22 chat history)
+- ROOT CAUSE: qwen2.5-coder-7b returns an EMPTY/failed response when asked to emit ~4 files in ONE
+  aider run (CRB-22 run b: no assistant reply recorded, 0 edits applied). Pseudocode contracts (run a)
+  make it ramble off-task. Runs that SUCCEEDED (CRB-20, CRB-21) emitted 1-2 SMALL files from a concise
+  DESCRIPTIVE contract.
+- CONCLUSION: the ceiling is OUTPUT SIZE / FILE COUNT per run, not capability.
+- PROTOCOL for router / multi-file stories (use this going forward):
+  1. ONE file per aider run (never bundle new files + edits).
+  2. Concise DESCRIPTIVE contract with valid signatures — NOT pseudocode, NOT a full-code paste
+     (pasting the whole solution made the model return empty).
+  3. Wire the router into app.py as its OWN separate one-line-edit run.
+  4. Reviewer authors only if a single-file run still fails after a tighter bounce.
+
+## CORRECTION (2026-07-16) — the CRB-22/23 failures were the MODEL ENDPOINT, not prompt size
+- The "AIDER MULTI-FILE FAILURE / output-size ceiling" protocol above was a PREMATURE diagnosis.
+- Real cause: the LM Studio endpoint on .12 went unresponsive around CRB-22 (~14:50). A DIRECT trivial
+  chat completion (`say hi`, 20 tokens) times out — the server answers /v1/models (metadata) but hangs
+  on /v1/chat/completions. CRB-20/21 worked earlier because the box was healthy then.
+- DIAGNOSTIC RULE: when aider produces empty output (no "Tokens received" line), FIRST curl
+  /v1/chat/completions directly with a trivial prompt before blaming the prompt/aider. Distinguish a
+  dead/slow model box from a genuine model-capability limit.
+- The single-file-per-run / descriptive-contract guidance is still reasonable practice, but it was NOT
+  what caused these failures. Re-test the 7B's true router ceiling only once the .12 box is healthy.
+
+## CRB-23 (Engagements API) — 2026-07-16 (healthy box)
+- With the .12 box healthy, qwen2.5-coder-7b BUILT the single-file router via aider (75 lines, applied)
+  AND wired app.py via a separate single-file edit run — confirming the one-file-per-run protocol works
+  and the earlier failures were purely the wedged endpoint.
+- Review gate caught: (1) model omitted docstrings again (state the docstring requirement per-function);
+  (2) it filtered the list via repo.get() (500s on a missing key) instead of a list comprehension;
+  (3) it wrote `async def` endpoints — the sync sqlite repo is THREAD-BOUND, so an async handler uses the
+  connection from a different thread than the dependency → sqlite3.ProgrammingError "created in a thread".
+- RULE: endpoints that touch the sqlite repos must be plain `def` (sync), matching clients.py — keeps the
+  Depends() dependency and the handler in the same threadpool thread. (Alt: check_same_thread=False, but
+  sync def is simpler and already the house style.)
+- FOLLOW-UP: when asked to change `async def`->`def`, the 7B rewrote the functions but DROPPED all the
+  `@router.*` decorators, so no routes registered (blanket 404s). RULE: on any "edit the endpoints"
+  bounce, restate the EXACT decorator that must sit above each function — the model loses them when
+  rewriting function signatures.
