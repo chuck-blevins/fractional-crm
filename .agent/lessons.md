@@ -45,3 +45,18 @@
 - LESSON (prompting): never put placeholder tokens like `# one-line docstring` in the contract — the
   7B reproduces prompt text verbatim. Give the ACTUAL docstring text you want, or say "each function
   begins with a triple-quoted one-line docstring describing its return value."
+
+## CRB-22 (Clients API) — 2026-07-16
+- First MULTI-FILE story (errors.py + routers/__init__.py + clients.py + app.py EDIT). qwen2.5-coder-7b
+  produced nothing usable in one shot: new files stayed empty and app.py was not edited. The
+  pseudocode-style contract (`@router.get("") -> list of ClientOut:`) is not valid Python and confused it.
+- LESSON: for the 7B on router/multi-file stories — (1) give VALID Python as the contract, not
+  pseudocode; (2) keep each aider run to as few files as possible; (3) editing an existing file
+  (e.g. app.py include_router) is unreliable when bundled with new-file creation — the reviewer should
+  own small wiring edits, or run them separately. Providing near-complete valid code is the realistic
+  "tight spec" at this model size for API routers.
+- OUTCOME: even with exact valid Python provided, two aider passes emitted no files (whole-format not
+  applied). Reviewer authored the 4 files directly (last resort). RECOMMENDATION for router stories:
+  split into separate aider runs — (a) errors.py, (b) the single router file, (c) app.py include_router
+  as its own edit — or accept reviewer authorship for routers until a stronger local model is used
+  (qwen3.6-35b is available on .12 but slow/thinking). Single-file tool/function stories remain fine.
