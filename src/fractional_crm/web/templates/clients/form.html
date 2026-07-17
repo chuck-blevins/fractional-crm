@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ mode }} client{% endblock %}
+{% block content %}
+<h1>{{ mode|capitalize }} client</h1>
+<form method="post" action="{{ action }}"></form>
+{% endblock %}

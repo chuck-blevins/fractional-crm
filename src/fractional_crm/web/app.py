@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from fractional_crm.web.auth import router as auth_router, require_session, session_secret
 from fractional_crm.web.pages import router as pages_router
+from fractional_crm.web.pages_clients import router as clients_pages_router
 from fractional_crm.web.routers.clients import router as clients_router
 from fractional_crm.web.routers.engagements import router as engagements_router
 from fractional_crm.web.routers.interactions import router as interactions_router
@@ -32,11 +33,13 @@ def create_app() -> FastAPI:
 
     # Public: login/logout live in the auth router.
     app.include_router(auth_router)
-    # Server-rendered UI pages (each route self-gates via require_session).
-    app.include_router(pages_router)
+
+    # Gated server-rendered UI pages.
+    gated = [Depends(require_session)]
+    app.include_router(pages_router)  # dashboard "/" self-gates per route
+    app.include_router(clients_pages_router, dependencies=gated)
 
     # Every JSON API router requires an authenticated session.
-    gated = [Depends(require_session)]
     app.include_router(clients_router, dependencies=gated)
     app.include_router(engagements_router, dependencies=gated)
     app.include_router(interactions_router, dependencies=gated)
