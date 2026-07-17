@@ -104,6 +104,17 @@ def session_secret() -> str:
     return secrets.token_hex(32)
 
 
+def client_key(request: Request) -> str:
+    """Return the rate-limit bucket for a request: the peer IP, or "unknown" if absent.
+
+    Deliberately uses the direct peer address and NOT X-Forwarded-For: XFF is attacker-supplied
+    unless a trusted proxy overwrites it, and honouring it blindly would let anyone bypass the
+    lockout by varying the header. If the app is ever put behind a proxy (CRB-35), configure
+    uvicorn's --proxy-headers with an explicit --forwarded-allow-ips instead of reading XFF here.
+    """
+    return request.client.host if request.client else "unknown"
+
+
 router = APIRouter()
 
 
@@ -115,11 +126,28 @@ def login_form() -> str:
 
 @router.post("/login", response_class=HTMLResponse)
 def login(request: Request, passcode: str = Form(...)) -> Response:
-    """Verify the passcode; on success set the session and redirect to /, else re-render with a generic error."""
+    """Verify the passcode; on success set the session and redirect to /, else re-render with a generic error.
+
+    Locked-out clients are refused BEFORE :func:`verify_passcode` runs. That ordering is
+    deliberate: PBKDF2 costs ~134ms of CPU per call, so hashing a locked-out attempt would
+    leave the login endpoint usable as a cheap CPU-exhaustion vector — the exact thing the
+    lockout is meant to stop. See docs/SECURITY_REVIEW.md (2026-07-17, finding 1) and CRB-39.
+    """
+    limiter = request.app.state.login_limiter
+    key = client_key(request)
+    if limiter.is_locked(key):
+        # Identical response whether or not the passcode is correct: no oracle.
+        return HTMLResponse(
+            _login_html("Too many failed attempts. Try again later."),
+            status_code=429,
+            headers={"Retry-After": str(limiter.retry_after(key))},
+        )
     stored = os.environ.get("CRM_PASSCODE_HASH", "")
     if verify_passcode(passcode, stored):
+        limiter.record_success(key)
         request.session["authenticated"] = True
         return RedirectResponse("/", status_code=303)
+    limiter.record_failure(key)
     # Generic error only — never reveal whether input was close (no user enumeration).
     return HTMLResponse(_login_html("Incorrect passcode"), status_code=200)
 
