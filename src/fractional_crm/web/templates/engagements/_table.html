@@ -1,4 +1,33 @@
-{% extends "base.html" %}
-{% block content %}
-<!-- CRB-31 stub: _table -->
-{% endblock %}
+<table>
+  <caption>Engagements</caption>
+  <thead>
+    <tr>
+      <th scope="col">Client</th>
+      <th scope="col">Role</th>
+      <th scope="col">Monthly rate</th>
+      <th scope="col">Start</th>
+      <th scope="col">End</th>
+      <th scope="col">Status</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if rows %}
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.engagement.client_email }}</td>
+          <td>{{ row.engagement.role }}</td>
+          <td>{{ row.engagement.monthly_rate }}</td>
+          <td>{{ row.engagement.start_date }}</td>
+          <td>{{ row.engagement.end_date or "—" }}</td>
+          <td>{{ row.engagement.status }}</td>
+          <td><a href="/engagements/{{ row.engagement.client_email }}/edit">Edit</a></td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="7">No engagements yet</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>

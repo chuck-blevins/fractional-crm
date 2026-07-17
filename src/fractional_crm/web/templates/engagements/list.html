@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% block title %}Engagements{% endblock %}
 {% block content %}
-<!-- CRB-31 stub: list -->
+<h1>Engagements</h1>
+<p><a href="/engagements/new">Add engagement</a></p>
+{% include "engagements/_table.html" %}
 {% endblock %}

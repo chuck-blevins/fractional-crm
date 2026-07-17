@@ -196,3 +196,25 @@
   called while locked — behaviour, not inspection.
 - Corollary: do NOT "harden" by raising PBKDF2 iterations while an endpoint is unthrottled. It
   makes the unauthenticated CPU burn worse. Rate limit first, iterations second.
+
+## CRB-31 (engagements UI + dashboard) — 2026-07-17
+- ROUTER-BY-ANALOGY WORKS. Given an existing router (pages_clients.py) as `--read` plus the deltas
+  as prose, the 7B reproduced the whole pattern for a new model (engagements) correctly bar one bug.
+  This extends the proven envelope beyond templates: the local loop can ADAPT an existing pattern,
+  not only fill markup. Do it this way for CRB-32/33 (interactions, teams+integrations) — feed the
+  nearest existing pages_*.py as the reference.
+- THE ONE BUG was the usual last-10%: it added a new filter param to the leaf helper (_rows) and to
+  the caller (the handler) but not to the MIDDLE helper (_list_response) they pass through, so the
+  keyword arg hit a function that didn't accept it -> TypeError on every list request. When you add
+  a param that flows caller->helper->leaf, the bounce prompt must name EVERY function in the chain.
+- NEW PATH-TRAP FLAVOR — "wrong-file fence via repo-map contamination". A fragment stub that begins
+  `{% extends "base.html" %}` makes aider pull base.html into its repo-map; the 7B then labels its
+  (correct) output block with `base.html` instead of the target. Result: a SILENT no-op — NO stray
+  file at repo root, NO "Applied edit" line, just aider printing "please add base.html to the chat".
+  The content was right all along; only the fence path was wrong. Diagnostic tell: build "succeeded"
+  but the target file is byte-for-byte the stub AND the log ends with an "add <file> to the chat"
+  request. FIX: fragment/partial stubs must NOT extend base.html and should be a bare one-line
+  comment — keep sibling templates out of aider's context so the model has no wrong name to grab.
+- Reminder reinforced: after EVERY aider run confirm the target actually changed
+  (`wc -l` / `git diff --stat <path>`), not just that aider exited. "No stray at root" is necessary
+  but NOT sufficient — this trap mis-targets an existing sibling, not the root.
