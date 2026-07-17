@@ -6,6 +6,7 @@ The domain stays framework-free; all web/auth glue lives here.
 """
 import hashlib
 import hmac
+import html
 import os
 import secrets
 
@@ -13,6 +14,21 @@ from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 _PBKDF2_ITERATIONS = 200_000
+
+#: CRM_ENV values that mark a NON-production run. Anything else — including unset — is
+#: treated as production, so a forgotten env var fails secure instead of silently
+#: weakening the app. See docs/SECURITY_REVIEW.md (2026-07-17, finding 3).
+_DEV_ENVS = frozenset({"dev", "development", "test", "testing", "local"})
+
+
+def is_production() -> bool:
+    """Return True unless CRM_ENV explicitly names a dev/test environment.
+
+    Fail-secure: an unset or unrecognised CRM_ENV is production. Callers use this to
+    decide whether a session secret is mandatory and whether the session cookie is
+    issued Secure (HTTPS-only).
+    """
+    return os.environ.get("CRM_ENV", "").strip().lower() not in _DEV_ENVS
 
 
 def hash_passcode(passcode: str) -> str:
@@ -44,8 +60,13 @@ def require_session(request: Request) -> None:
 
 
 def _login_html(error: str = "") -> str:
-    """Return the login page HTML, showing an error banner when `error` is non-empty."""
-    banner = f'<p class="error" role="alert">{error}</p>' if error else ""
+    """Return the login page HTML, showing an error banner when ``error`` is non-empty.
+
+    ``error`` is HTML-escaped. Today it is only ever a module literal, but escaping stops
+    this becoming reflected XSS the moment a caller passes user-controlled text.
+    See docs/SECURITY_REVIEW.md (2026-07-17, finding 4).
+    """
+    banner = f'<p class="error" role="alert">{html.escape(error)}</p>' if error else ""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Sign in</title></head>
@@ -66,14 +87,20 @@ def _login_html(error: str = "") -> str:
 def session_secret() -> str:
     """Return the session signing secret from CRM_SESSION_SECRET.
 
-    Required in production (CRM_ENV=production); otherwise falls back to an
-    ephemeral per-process secret so dev/test runs work without configuration.
+    Required in production. Only when CRM_ENV explicitly marks a dev/test run does this
+    fall back to an ephemeral per-process secret. Because :func:`is_production` treats an
+    unset CRM_ENV as production, forgetting the variable raises at startup rather than
+    silently starting with a per-worker secret (which breaks sessions across workers).
+    See docs/SECURITY_REVIEW.md (2026-07-17, finding 3).
     """
     secret = os.environ.get("CRM_SESSION_SECRET")
     if secret:
         return secret
-    if os.environ.get("CRM_ENV") == "production":
-        raise RuntimeError("CRM_SESSION_SECRET is required in production")
+    if is_production():
+        raise RuntimeError(
+            "CRM_SESSION_SECRET is required. Set it, or set CRM_ENV to one of "
+            f"{sorted(_DEV_ENVS)} to use an ephemeral dev/test secret."
+        )
     return secrets.token_hex(32)
 
 
