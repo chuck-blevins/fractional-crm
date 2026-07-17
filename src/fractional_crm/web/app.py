@@ -12,6 +12,7 @@ from fractional_crm.web.auth import (
     session_secret,
 )
 from fractional_crm.web.pages import router as pages_router
+from fractional_crm.web.ratelimit import limiter_from_env
 from fractional_crm.web.pages_clients import router as clients_pages_router
 from fractional_crm.web.routers.clients import router as clients_router
 from fractional_crm.web.routers.engagements import router as engagements_router
@@ -39,6 +40,8 @@ def create_app() -> FastAPI:
         https_only=is_production(),
         same_site="lax",
     )
+    # CRB-39: per-app login limiter, so each app instance (and each test) gets clean state.
+    app.state.login_limiter = limiter_from_env()
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
     @app.get("/health")
