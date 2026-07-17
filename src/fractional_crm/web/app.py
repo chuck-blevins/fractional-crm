@@ -14,6 +14,7 @@ from fractional_crm.web.auth import (
 from fractional_crm.web.pages import router as pages_router
 from fractional_crm.web.ratelimit import limiter_from_env
 from fractional_crm.web.pages_clients import router as clients_pages_router
+from fractional_crm.web.pages_engagements import router as engagements_pages_router
 from fractional_crm.web.routers.clients import router as clients_router
 from fractional_crm.web.routers.engagements import router as engagements_router
 from fractional_crm.web.routers.interactions import router as interactions_router
@@ -61,6 +62,7 @@ def create_app() -> FastAPI:
     # Gated server-rendered UI pages.
     app.include_router(pages_router, dependencies=gated)
     app.include_router(clients_pages_router, dependencies=gated)
+    app.include_router(engagements_pages_router, dependencies=gated)
 
     # Every JSON API router requires an authenticated session.
     app.include_router(clients_router, dependencies=gated)
