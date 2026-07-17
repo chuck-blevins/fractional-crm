@@ -168,3 +168,31 @@
     `gh pr reopen N` && `gh pr edit N --base main`        # then merge normally
 - Corollary: `gh pr merge` prints NOTHING on success. Don't read silence as failure — verify with
   `gh pr view N --json state,mergedAt` and check `git log --first-parent origin/main`.
+
+## CRB-39 (login rate limit) — 2026-07-17
+- PATH-PREFIX TRAP RECURS ON BOUNCES, even when the target was pre-stubbed. The pre-stub only
+  guarantees the FIRST run is an edit-not-create; on run 2 the 7B emitted the fence header as the
+  bare basename again and aider wrote a stray `./ratelimit.py` at the repo root while the real
+  target kept the old (buggy) content — so the tests failed *identically* to the previous run,
+  which looks exactly like "the model ignored the bounce". It hadn't; the content was correct, at
+  the wrong path.
+  RELIABLE TELL: read aider's own closing line. `Applied edit to src/fractional_crm/web/foo.py`
+  = fine. `Applied edit to foo.py` (bare basename) = the trap fired. Diff the two runs' log lines.
+  Also: aider STAGES the stray (`AM` in git status), so a careless `git add .` / `git commit -a`
+  would commit it. Check `git status --porcelain` after EVERY aider run, not just the first, and
+  `find . -maxdepth 1 -name "*.py"` before committing.
+  RECOVERY: if the stray's content is correct, `git restore --staged <stray>` + `mv` it onto the
+  intended path. That is a PATH fix, not a reviewer-authored implementation — the model still
+  wrote the code, so it does not count as a ghostwrite.
+- The 7B ignored two EXPLICIT prose spec bullets on run 1: it locked on the first failure (never
+  compared the count to `max_failures`) and used a bare `int(os.getenv(...))` that raises on a
+  typo'd env value. Prose rules about a CONDITIONAL ("only lock once count reaches N") and about
+  DEFENSIVE parsing ("must never raise") do not reliably survive; the bounce only worked once the
+  exact `if/else` and `try/except` blocks were inlined verbatim in the prompt. Confirms the standing
+  ceiling: good drafter, not a finisher — spoon-feed edge/conditional logic as code, not prose.
+- SECURITY RULE for any auth throttle: the lockout check must run BEFORE the password hash. PBKDF2
+  is ~134ms of CPU per call, so hashing a locked-out attempt turns the lockout into a DoS amplifier
+  instead of a defence. Pin it with a test that spies on the verify function and asserts it is never
+  called while locked — behaviour, not inspection.
+- Corollary: do NOT "harden" by raising PBKDF2 iterations while an endpoint is unthrottled. It
+  makes the unauthenticated CPU burn worse. Rate limit first, iterations second.
