@@ -110,3 +110,15 @@
 - RULE: after each aider run, verify the file exists AND is non-empty at the intended path; if aider
   reports "Applied edit to <name>" without the expected directory, the model dropped the prefix —
   relocate the file (reviewer mechanical fix) or restate the full path prominently and re-run.
+
+## CRB-28 (passcode login + gating) — 2026-07-16
+- The one-file wiring run hit the CRB-25 path-prefix trap AGAIN: the 7B emitted the fenced
+  header as bare "app.py" (no src/fractional_crm/web/ prefix), so aider created a NEW file at
+  the REPO ROOT and left the real app.py untouched (exit 0, "Applied edit to app.py"). The
+  CONTENT was correct — only the path was wrong. RULE: when the target is a nested path, state
+  in the prompt "the fenced code block header MUST be the full path src/fractional_crm/web/app.py",
+  and after every run assert the intended path changed (git diff --name-only) AND no stray file
+  appeared at the repo root (git status --porcelain for new top-level *.py).
+- Docstrings omitted again on ~half the functions/routes despite the standing rule. For any file
+  with N public functions, the prompt should enumerate each signature WITH its one-line docstring
+  text, not just say "docstrings on all". Reviewer added them this time.
