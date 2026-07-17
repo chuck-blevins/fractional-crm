@@ -122,3 +122,18 @@
 - Docstrings omitted again on ~half the functions/routes despite the standing rule. For any file
   with N public functions, the prompt should enumerate each signature WITH its one-line docstring
   text, not just say "docstrings on all". Reviewer added them this time.
+
+## CRB-29 (base layout + nav) — 2026-07-16
+- POSITIVE: pre-creating each target file as a STUB (so aider does an in-place EDIT, not a
+  CREATE) sidestepped the path-prefix trap entirely — base.html and style.css both landed at
+  the correct nested path, zero stray root files, zero bounces. Adopt for all nested-file
+  stories: reviewer stubs the file first, then aider edits it.
+- With an exact accessible-markup spec, the 7B reproduced base.html (skip link, semantic
+  landmarks, aria-current conditionals, HTMX tag) correctly first try. HTML/CSS to a tight
+  spec is within the 7B reach.
+- REVIEW CATCH: the model wrapped the header brand in <h1>, which plus the page <h1> gives two
+  h1s (WCAG "one h1 per page"). RULE: in layout specs, state the brand/site-name is a plain
+  link and the SINGLE <h1> comes from the page content block.
+- OPS: never append lessons via an inline `<< "EOF"` heredoc inside a single-quoted ssh
+  command — a stray EOF-match failure leaks the rest of the script into the file. scp a file
+  and `cat file >> .agent/lessons.md` instead. Also rm .agent/prompt-*.txt before committing.

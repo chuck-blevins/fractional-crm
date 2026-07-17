@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Fractional CRM{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <a class="brand" href="/">Fractional CRM</a>
+    <nav aria-label="Main">
+      <ul>
+        {% if request.url.path.startswith('/clients') %}<li><a href="/clients" aria-current="page">Clients</a></li>{% else %}<li><a href="/clients">Clients</a></li>{% endif %}
+        {% if request.url.path.startswith('/engagements') %}<li><a href="/engagements" aria-current="page">Engagements</a></li>{% else %}<li><a href="/engagements">Engagements</a></li>{% endif %}
+        {% if request.url.path.startswith('/interactions') %}<li><a href="/interactions" aria-current="page">Interactions</a></li>{% else %}<li><a href="/interactions">Interactions</a></li>{% endif %}
+        {% if request.url.path.startswith('/teams') %}<li><a href="/teams" aria-current="page">Teams</a></li>{% else %}<li><a href="/teams">Teams</a></li>{% endif %}
+        {% if request.url.path.startswith('/integrations') %}<li><a href="/integrations" aria-current="page">Integrations</a></li>{% else %}<li><a href="/integrations">Integrations</a></li>{% endif %}
+        {% if request.url.path.startswith('/import-export') %}<li><a href="/import-export" aria-current="page">Import/Export</a></li>{% else %}<li><a href="/import-export">Import/Export</a></li>{% endif %}
+      </ul>
+    </nav>
+    <form method="post" action="/logout"><button type="submit">Log out</button></form>
+  </header>
+  <main id="main">{% block content %}{% endblock %}</main>
+</body>
+</html>
