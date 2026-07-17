@@ -1,6 +1,17 @@
 {% extends "base.html" %}
-{% block title %}{{ mode }} client{% endblock %}
+{% block title %}{{ mode|capitalize }} client{% endblock %}
 {% block content %}
 <h1>{{ mode|capitalize }} client</h1>
-<form method="post" action="{{ action }}"></form>
+{% if error %}
+<div class="error-summary" role="alert" tabindex="-1" id="error-summary"><p>{{ error }}</p></div>
+<script>document.getElementById('error-summary')?.focus();</script>
+{% endif %}
+<form method="post" action="{{ action }}">
+  <p><label for="name">Name:</label> <input id="name" name="name" value="{{ form.name|default('') }}" required></p>
+  <p><label for="company">Company:</label> <input id="company" name="company" value="{{ form.company|default('') }}" required></p>
+  <p><label for="email">Email:</label> <input id="email" name="email" type="email" value="{{ form.email|default('') }}" required{% if email_readonly %} readonly{% endif %}></p>
+  <p><label for="status">Status:</label> <select id="status" name="status">{% for s in statuses %}<option value="{{ s }}"{% if form.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></p>
+  <p><label for="engagement_type">Engagement Type:</label> <select id="engagement_type" name="engagement_type">{% for e in engagement_types %}<option value="{{ e }}"{% if form.engagement_type == e %} selected{% endif %}>{{ e }}</option>{% endfor %}</select></p>
+  <button type="submit">Save</button>
+</form>
 {% endblock %}

@@ -137,3 +137,14 @@
 - OPS: never append lessons via an inline `<< "EOF"` heredoc inside a single-quoted ssh
   command — a stray EOF-match failure leaks the rest of the script into the file. scp a file
   and `cat file >> .agent/lessons.md` instead. Also rm .agent/prompt-*.txt before committing.
+
+## CRB-30 (Clients UI) — 2026-07-16
+- The stub-first / in-place-edit approach held up on a 3rd story: both templates built by the 7B
+  with ZERO bounces and ZERO stray files. This is now the default for every nested-file build.
+- TRAP (reviewer-side, FastAPI): a POST handler annotated `-> HTMLResponse | RedirectResponse`
+  makes FastAPI try to build a response model from the union and raises at import
+  ("Invalid args for response field"). Annotate multi-return handlers as `-> Response` (or set
+  `response_model=None` on the decorator). GET handlers returning a single Response subclass are fine.
+- To let the UI honour the domain's rules without duplicating them, expose the domain's data as
+  module constants (ALLOWED_TRANSITIONS, STATUSES, ENGAGEMENT_TYPES) via a pure refactor and pass
+  them into the template context — do NOT re-encode the state machine in the web layer.
