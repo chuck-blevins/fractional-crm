@@ -100,3 +100,13 @@
   `@router.*` decorators, so no routes registered (blanket 404s). RULE: on any "edit the endpoints"
   bounce, restate the EXACT decorator that must sit above each function — the model loses them when
   rewriting function signatures.
+
+## CRB-25 (Teams + Integrations) — 2026-07-16
+- qwen emitted the filename header WITHOUT the directory prefix ("sqlite_integration_repository.py"
+  instead of "src/fractional_crm/sqlite_integration_repository.py"), so aider wrote the file to the
+  REPO ROOT and left the intended path as a 0-byte file.
+- TRAP: `ast.parse("")` succeeds — an empty file "parses". Do NOT use ast-parse to confirm a build;
+  check `wc -l` on the INTENDED path (non-zero) instead.
+- RULE: after each aider run, verify the file exists AND is non-empty at the intended path; if aider
+  reports "Applied edit to <name>" without the expected directory, the model dropped the prefix —
+  relocate the file (reviewer mechanical fix) or restate the full path prominently and re-run.
