@@ -148,3 +148,23 @@
 - To let the UI honour the domain's rules without duplicating them, expose the domain's data as
   module constants (ALLOWED_TRANSITIONS, STATUSES, ENGAGEMENT_TYPES) via a pure refactor and pass
   them into the template context — do NOT re-encode the state machine in the web layer.
+
+## OPS — merging a STACKED PR chain (learned the hard way, 2026-07-17)
+- NEVER `gh pr merge N --merge --delete-branch` on a PR that another PR is stacked on.
+  Deleting the base branch does NOT retarget the dependent PR — GitHub silently **auto-CLOSES**
+  it (state=CLOSED, mergeable=CONFLICTING). You then hit a deadlock: you cannot reopen it (its
+  base branch no longer exists) and you cannot retarget it ("Cannot change the base branch of a
+  closed pull request").
+- The `--delete-branch` habit from CRB-22..27 is safe ONLY because those were independent
+  branches cut from main. A stack (#28 <- #29 <- #30) is a different animal.
+- CORRECT procedure for a stack, bottom-up:
+    1. `gh pr merge <bottom> --merge`        # NO --delete-branch
+    2. `gh pr edit <next> --base main`       # retarget explicitly; don't trust auto-retarget
+    3. repeat up the stack
+    4. only at the very END, delete the branches — and verify first:
+       `git merge-base --is-ancestor origin/<branch> origin/main`
+- RECOVERY if you already did it: the merge commit's second parent IS the deleted branch tip.
+    `git push origin <merge_sha>^2:refs/heads/<branch>`   # restore
+    `gh pr reopen N` && `gh pr edit N --base main`        # then merge normally
+- Corollary: `gh pr merge` prints NOTHING on success. Don't read silence as failure — verify with
+  `gh pr view N --json state,mergedAt` and check `git log --first-parent origin/main`.
