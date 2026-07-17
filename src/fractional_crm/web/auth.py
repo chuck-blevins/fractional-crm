@@ -1,15 +1,15 @@
 """CRB-28: single-user passcode login and signed-session route protection.
 
 Exposes passcode hashing helpers, a ``require_session`` dependency used to gate the
-JSON API routers, and a small router providing ``/login``, ``/logout`` and a gated
-home page. The domain stays framework-free; all web/auth glue lives here.
+JSON API routers and UI pages, and a router providing ``/login`` and ``/logout``.
+The domain stays framework-free; all web/auth glue lives here.
 """
 import hashlib
 import hmac
 import os
 import secrets
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 _PBKDF2_ITERATIONS = 200_000
@@ -102,17 +102,3 @@ def logout(request: Request) -> Response:
     """Clear the session and redirect to the login page."""
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
-
-
-@router.get("/", response_class=HTMLResponse, dependencies=[Depends(require_session)])
-def home() -> str:
-    """Authenticated landing page (placeholder until the CRB-29+ UI lands)."""
-    return """
-    <main>
-      <h1>Fractional CRM</h1>
-      <p>You are signed in.</p>
-      <form method='post' action='/logout'>
-        <button type='submit'>Log out</button>
-      </form>
-    </main>
-    """

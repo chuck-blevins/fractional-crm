@@ -1,8 +1,12 @@
 """FastAPI application factory for the CRM web layer."""
+from pathlib import Path
+
 from fastapi import Depends, FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from fractional_crm.web.auth import router as auth_router, require_session, session_secret
+from fractional_crm.web.pages import router as pages_router
 from fractional_crm.web.routers.clients import router as clients_router
 from fractional_crm.web.routers.engagements import router as engagements_router
 from fractional_crm.web.routers.interactions import router as interactions_router
@@ -11,20 +15,25 @@ from fractional_crm.web.routers.integrations import router as integrations_route
 from fractional_crm.web.routers.reporting import router as reporting_router
 from fractional_crm.web.routers.csv_routes import router as csv_router
 
+_STATIC_DIR = Path(__file__).parent / "static"
+
 
 def create_app() -> FastAPI:
-    """Create the FastAPI app: signed sessions, public /health + auth, gated API routers."""
+    """Create the FastAPI app: signed sessions, static assets, public /health + auth, gated UI + API."""
     app = FastAPI()
     # Signed session cookie backs single-user passcode auth (CRB-28).
     app.add_middleware(SessionMiddleware, secret_key=session_secret())
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
     @app.get("/health")
     def health() -> dict:
         """Public liveness probe returning {"status": "ok"}."""
         return {"status": "ok"}
 
-    # Public: login/logout live in the auth router; its "/" home is self-gated.
+    # Public: login/logout live in the auth router.
     app.include_router(auth_router)
+    # Server-rendered UI pages (each route self-gates via require_session).
+    app.include_router(pages_router)
 
     # Every JSON API router requires an authenticated session.
     gated = [Depends(require_session)]
