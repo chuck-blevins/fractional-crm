@@ -5,6 +5,10 @@ _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-
 _ALLOWED_ROLES = ("coo", "cpo", "advisor")
 _ALLOWED_STATUSES = ("proposed", "active", "completed", "cancelled")
 
+#: Public aliases so the web layer drives its <select>s from the domain (CRB-31, pure refactor).
+ROLES = _ALLOWED_ROLES
+STATUSES = _ALLOWED_STATUSES
+
 
 class Engagement:
     """A fractional engagement with a client. Dates are kept as ISO strings."""

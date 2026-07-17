@@ -3,8 +3,14 @@
 {% block content %}
 <h1>Dashboard</h1>
 <p>Welcome back. Pick a section from the navigation to get started.</p>
-{# Summary widgets (active clients, run-rate, recent interactions) are slotted in here in CRB-31. #}
 <section aria-label="Overview">
-  <p>Overview widgets are coming soon.</p>
+  <div>
+    <h2>Active engagements</h2>
+    <p data-testid="dash-active-count">{{ active_count }}</p>
+  </div>
+  <div>
+    <h2>Monthly run-rate</h2>
+    <p data-testid="dash-run-rate">${{ "{:,.0f}".format(monthly_run_rate) }}</p>
+  </div>
 </section>
 {% endblock %}

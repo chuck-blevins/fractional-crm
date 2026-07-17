@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ mode|capitalize }} engagement{% endblock %}
+{% block content %}
+<h1>{{ mode|capitalize }} engagement</h1>
+{% if error %}
+<div class="error-summary" role="alert" tabindex="-1" id="error-summary"><p>{{ error }}</p></div>
+<script>document.getElementById('error-summary')?.focus();</script>
+{% endif %}
+<form method="post" action="{{ action }}">
+  <p><label for="client_email">Client email:</label> <input id="client_email" name="client_email" type="email" value="{{ form.client_email|default('') }}" required{% if client_email_readonly %} readonly{% endif %}></p>
+  <p><label for="role">Role:</label> <select id="role" name="role">{% for r in roles %}<option value="{{ r }}"{% if form.role == r %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></p>
+  <p><label for="monthly_rate">Monthly rate:</label> <input id="monthly_rate" name="monthly_rate" type="number" step="0.01" min="0" value="{{ form.monthly_rate|default('') }}" required></p>
+  <p><label for="start_date">Start date:</label> <input id="start_date" name="start_date" type="date" value="{{ form.start_date|default('') }}" required></p>
+  <p><label for="end_date">End date (optional):</label> <input id="end_date" name="end_date" type="date" value="{{ form.end_date|default('') }}"></p>
+  <p><label for="status">Status:</label> <select id="status" name="status">{% for s in statuses %}<option value="{{ s }}"{% if form.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></p>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
