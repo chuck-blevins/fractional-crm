@@ -1,0 +1,42 @@
+<table>
+  <caption>Clients</caption>
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Company</th>
+      <th scope="col">Email</th>
+      <th scope="col">Status</th>
+      <th scope="col">Engagement</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if rows %}
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.client.name }}</td>
+          <td>{{ row.client.company }}</td>
+          <td>{{ row.client.email }}</td>
+          <td>{{ row.client.status }}</td>
+          <td>{{ row.client.engagement_type }}</td>
+          <td>
+            <a href="/clients/{{ row.client.email }}/edit">Edit</a>
+            {% if row.transitions %}
+              <form method="post" action="/clients/{{ row.client.email }}/status">
+                <label for="status-{{ loop.index }}">Change status</label>
+                <select id="status-{{ loop.index }}" name="status">
+                  {% for t in row.transitions %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                </select>
+                <button type="submit">Update</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="6">No clients yet</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>

@@ -4,6 +4,19 @@ _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-
 _ALLOWED_STATUSES = ("prospect", "active", "paused", "closed")
 _ALLOWED_ENGAGEMENT_TYPES = ("coo", "cpo", "advisor")
 
+# Public aliases so callers (e.g. the UI) render the same enums the domain validates.
+STATUSES = _ALLOWED_STATUSES
+ENGAGEMENT_TYPES = _ALLOWED_ENGAGEMENT_TYPES
+
+# The status state machine, exposed so callers (e.g. the UI) can offer exactly the
+# transitions the domain enforces without re-implementing the rules.
+ALLOWED_TRANSITIONS = {
+    "prospect": ["active"],
+    "active": ["paused", "closed"],
+    "paused": ["active", "closed"],
+    "closed": [],
+}
+
 
 class Client:
     """A CRM client for a fractional COO/CPO engagement."""
@@ -47,15 +60,7 @@ class Client:
 
     def transition_to(self, new_status: str) -> None:
         """Transition the client's status to a new status if allowed; otherwise raise ValueError."""
-        current_status = self.status
-        allowed_transitions = {
-            "prospect": ["active"],
-            "active": ["paused", "closed"],
-            "paused": ["active", "closed"],
-            "closed": []
-        }
-
-        if new_status in allowed_transitions.get(current_status, []):
+        if new_status in ALLOWED_TRANSITIONS.get(self.status, []):
             self.status = new_status
         else:
-            raise ValueError(f"Invalid transition from {current_status} to {new_status}")
+            raise ValueError(f"Invalid transition from {self.status} to {new_status}")
