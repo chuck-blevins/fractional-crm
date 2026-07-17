@@ -7,6 +7,7 @@ from fractional_crm.web.routers.interactions import router as interactions_route
 from fractional_crm.web.routers.teams import router as teams_router
 from fractional_crm.web.routers.integrations import router as integrations_router
 from fractional_crm.web.routers.reporting import router as reporting_router
+from fractional_crm.web.routers.csv_routes import router as csv_router
 
 
 def create_app() -> FastAPI:
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     app.include_router(teams_router)
     app.include_router(integrations_router)
     app.include_router(reporting_router)
+    app.include_router(csv_router)
     return app
 
 
