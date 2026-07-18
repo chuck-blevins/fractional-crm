@@ -1,4 +1,38 @@
 {% extends "base.html" %}
+{% block title %}{{ client.name }}{% endblock %}
 {% block content %}
-<!-- CRB-32 stub: client detail -->
+<h1>{{ client.name }}</h1>
+<dl>
+  <dt>Company</dt><dd>{{ client.company }}</dd>
+  <dt>Email</dt><dd>{{ client.email }}</dd>
+  <dt>Status</dt><dd>{{ client.status }}</dd>
+  <dt>Engagement Type</dt><dd>{{ client.engagement_type }}</dd>
+</dl>
+
+{% if error %}
+<p role="alert">{{ error }}</p>
+{% endif %}
+
+<h2>Log an interaction</h2>
+<form method="post" action="/clients/{{ client.email }}/interactions">
+  <label for="date">Date</label>
+  <input type="date" id="date" name="date" value="{{ form.get("date", "") }}" required>
+
+  <label for="kind">Kind</label>
+  <select id="kind" name="kind" required>
+    {% for k in kinds %}
+      <option value="{{ k }}" {% if form.get("kind") == k %}selected{% endif %}>{{ k }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="summary">Summary</label>
+  <textarea id="summary" name="summary" required>{{ form.get("summary", "") }}</textarea>
+
+  <button type="submit">Log interaction</button>
+</form>
+
+<h2>Timeline</h2>
+{% include "clients/_timeline.html" %}
+
+<p><a href="/clients">Back to clients</a></p>
 {% endblock %}
