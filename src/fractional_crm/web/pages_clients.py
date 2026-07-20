@@ -4,7 +4,7 @@ Reuses the domain Client + repository. HTMX enhances create/status without full 
 but every action also works as a plain form POST -> redirect (progressive enhancement).
 Handlers are sync `def` to stay on the sqlite repo's thread (see .agent/lessons.md).
 """
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from fractional_crm.client import ALLOWED_TRANSITIONS, ENGAGEMENT_TYPES, STATUSES, Client
@@ -12,9 +12,10 @@ from fractional_crm.sqlite_repository import SqliteClientRepository
 from fractional_crm.web.deps import get_client_repo
 from fractional_crm.web.errors import not_found
 from fractional_crm.web.templates import templates
+from fractional_crm.importer import ClientImporter
 
 router = APIRouter(prefix="/clients")
-
+MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 def _rows(repo: SqliteClientRepository) -> list[dict]:
     """Return [{client, transitions}] for every stored client (transitions = allowed next statuses)."""
@@ -22,9 +23,11 @@ def _rows(repo: SqliteClientRepository) -> list[dict]:
 
 
 def _list_response(request: Request, repo: SqliteClientRepository, *, template: str = "clients/list.html",
-                   status_code: int = 200) -> HTMLResponse:
+                   status_code: int = 200, import_result: dict | None = None) -> HTMLResponse:
     """Render the clients list (full page) or the `_table.html` fragment for HTMX swaps."""
-    return templates.TemplateResponse(request, template, {"rows": _rows(repo)}, status_code=status_code)
+    return templates.TemplateResponse(request, template,
+                                      {"rows": _rows(repo), "import_result": import_result},
+                                      status_code=status_code)
 
 
 def _form_response(request: Request, *, mode: str, action: str, form: dict, error: str | None,
@@ -65,6 +68,36 @@ def create_client(
         return _list_response(request, repo, template="clients/_table.html")
     return RedirectResponse("/clients", status_code=303)
 
+
+@router.post("/import", response_class=HTMLResponse)
+def import_clients_from_upload(request: Request, file: UploadFile = File(...),
+                              repo: SqliteClientRepository = Depends(get_client_repo)) -> HTMLResponse:
+    """Import clients from an uploaded CSV/JSON file; re-render the list with a summary.
+
+    Every failure mode (too large, non-UTF-8, unparseable) renders the page with an
+    error instead of a 500, so the plain form POST always returns readable HTML.
+    """
+    content = file.file.read()
+    if len(content) > MAX_IMPORT_BYTES:
+        return _list_response(request, repo, status_code=413,
+                              import_result={"imported": 0, "errors": [{"row": 0, "error": "file too large"}]})
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        return _list_response(request, repo, status_code=400,
+                              import_result={"imported": 0, "errors": [{"row": 0, "error": "file is not valid UTF-8"}]})
+    importer = ClientImporter(repo)
+    filename = file.filename or ""
+    try:
+        if filename.endswith(".json"):
+            result = importer.import_json(text)
+        else:
+            result = importer.import_csv(text)
+    except ValueError as exc:
+        return _list_response(request, repo, status_code=400,
+                              import_result={"imported": 0, "errors": [{"row": 0, "error": str(exc)}]})
+    return _list_response(request, repo,
+                          import_result={"imported": len(result.imported), "errors": result.errors})
 
 @router.get("/{email}/edit", response_class=HTMLResponse)
 def edit_client_form(request: Request, email: str,

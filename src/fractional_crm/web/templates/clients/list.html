@@ -3,5 +3,30 @@
 {% block content %}
 <h1>Clients</h1>
 <p><a href="/clients/new">Add client</a></p>
+
+<section aria-labelledby="csv-heading">
+  <h2 id="csv-heading">Import / export</h2>
+  <p><a href="/api/clients/csv/export">Export CSV</a></p>
+  <form method="post" action="/clients/import" enctype="multipart/form-data"
+        onsubmit="this.setAttribute('aria-busy','true');var b=document.getElementById('import-submit');setTimeout(function(){if(b){b.disabled=true;}},0);">
+    <label for="file">Import clients (CSV or JSON)</label>
+    <input type="file" id="file" name="file" accept=".csv,.json" required>
+    <button id="import-submit" type="submit">Import</button>
+  </form>
+  {% if import_result %}
+  <div role="status" aria-live="polite" data-testid="import-summary">
+    <p><span data-testid="imported-count">{{ import_result.imported }}</span> client(s) imported.</p>
+    {% if import_result.errors %}
+    <h3>Rows with errors</h3>
+    <ul>
+      {% for e in import_result.errors %}
+      <li data-testid="import-error">Row {{ e.row }}: {{ e.error }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+
 {% include "clients/_table.html" %}
 {% endblock %}
