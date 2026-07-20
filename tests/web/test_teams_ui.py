@@ -60,6 +60,18 @@ def test_create_team_persists_and_redirects(client):
     assert [t["name"] for t in client.get("/api/teams").json()] == ["Platform"]
 
 
+def test_create_team_persists_stripped_name(client):
+    """Whitespace around the submitted name must not be stored.
+
+    ``Team(name)`` validates and strips, but the handler must persist that
+    stripped value via the repo rather than the raw form field — otherwise
+    ``"  Platform  "`` is saved with its surrounding whitespace intact.
+    """
+    r = client.post("/teams", data={"name": "  Platform  "}, follow_redirects=False)
+    assert r.status_code == 303
+    assert [t["name"] for t in client.get("/api/teams").json()] == ["Platform"]
+
+
 def test_create_team_with_blank_name_rerenders_accessibly(client):
     r = client.post("/teams", data={"name": "   "}, follow_redirects=False)
     assert r.status_code == 200

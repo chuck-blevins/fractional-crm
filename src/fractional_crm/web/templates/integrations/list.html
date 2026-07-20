@@ -1,1 +1,21 @@
-<!-- stub: integrations list -->
+{% extends "base.html" %}
+{% block title %}Integrations{% endblock %}
+{% block content %}
+<h1>Integrations</h1>
+{% if error %}
+<p role="alert">{{ error }}</p>
+{% endif %}
+{% include "integrations/_table.html" %}
+<h2>Connect a provider</h2>
+<form method="post" action="/integrations/connect">
+  <label for="provider">Provider</label>
+  <select id="provider" name="provider">
+    {% for p in providers %}
+      <option value="{{ p }}" {% if form.get("provider") == p %}selected{% endif %}>{{ p }}</option>
+    {% endfor %}
+  </select>
+  <label for="external_id">Account ID</label>
+  <input type="text" id="external_id" name="external_id" value="{{ form.get('external_id', '') }}" required>
+  <button type="submit">Connect</button>
+</form>
+{% endblock %}
