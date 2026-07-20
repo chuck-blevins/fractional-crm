@@ -1,7 +1,12 @@
 import datetime
 
-_ALLOWED_PROVIDERS = ("slack", "github", "gitlab", "figma", "intercom", "zendesk")
-_ALLOWED_STATUSES = ("connected", "disconnected", "error")
+#: The fixed set of supported providers. Public so the UI can list every provider,
+#: connected or not, without re-encoding the list (CRB-33).
+PROVIDERS = ("slack", "github", "gitlab", "figma", "intercom", "zendesk")
+_ALLOWED_PROVIDERS = PROVIDERS  # retained so existing private references keep working
+#: Allowed integration statuses (CRB-33).
+STATUSES = ("connected", "disconnected", "error")
+_ALLOWED_STATUSES = STATUSES  # retained so existing private references keep working
 
 
 class Integration:

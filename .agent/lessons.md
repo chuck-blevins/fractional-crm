@@ -245,3 +245,16 @@
   probing the JSON API for the same data. Here the POST path persisted correctly (API read-back
   returned the interaction) while the page rendered empty — which proved the router was done and
   isolated all 5 remaining failures to the still-stubbed templates in one step.
+
+## 2026-07-20 — 7B drops a surrounding try/except when you quote only the inner lines
+CRB-33 teams-router review bounce. The prompt showed the two lines *inside* a `try:` block
+(`Team(name)` / `repo.create_team(name)`) and said "change these two exact lines". The 7B
+made the requested change to those two lines but SILENTLY DELETED the enclosing
+`try/except ValueError` — so a blank name went from a re-rendered form to an uncaught 500,
+regressing `test_create_team_with_blank_name_rerenders_accessibly` (which had been green).
+Reinforces line-64's rule and extends it: when an edit sits inside defensive/conditional
+control flow, quote the ENTIRE enclosing function (or block) as the replacement code, never
+just the interior lines — otherwise the 7B reconstructs the block and loses the guard. Also,
+in the SAME run it ignored a second, unrelated instruction (remove a leaked `# Add this
+import` comment): the 7B reliably executes ~1 edit intent per run cleanly and drops extras,
+so keep review bounces to a single concern where possible, or fully spoon-feed every change.

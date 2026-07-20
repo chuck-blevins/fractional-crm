@@ -2,7 +2,10 @@ from typing import Dict, List
 import re
 
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
-_ALLOWED_ROLES = ("admin", "member", "guest")
+#: Allowed team-member roles. Public so the web layer drives its <select> from the
+#: domain instead of re-encoding the list in a template (CRB-33, as CRB-30/31 did).
+ROLES = ("admin", "member", "guest")
+_ALLOWED_ROLES = ROLES  # retained so existing private references keep working
 
 
 class TeamMember:

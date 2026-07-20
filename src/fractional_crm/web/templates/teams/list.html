@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Teams{% endblock %}
+{% block content %}
+<h1>Teams</h1>
+{% if error %}
+<p role="alert">{{ error }}</p>
+{% endif %}
+{% if teams %}
+<ul>
+  {% for t in teams %}
+    <li><a href="/teams/{{ t.id }}">{{ t.name }}</a></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No teams yet</p>
+{% endif %}
+<h2>Add a team</h2>
+<form method="post" action="/teams">
+  <label for="name">Team name</label>
+  <input type="text" id="name" name="name" value="{{ form.get("name", "") }}" required>
+  <button type="submit">Add team</button>
+</form>
+{% endblock %}

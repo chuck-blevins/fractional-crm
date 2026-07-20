@@ -1,0 +1,40 @@
+<table id="integrations">
+  <caption>Integrations</caption>
+  <thead>
+    <tr>
+      <th scope="col">Provider</th>
+      <th scope="col">Status</th>
+      <th scope="col">Account</th>
+      <th scope="col">Last synced</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+      <tr data-testid="integration-{{ row.provider }}">
+        <td>{{ row.provider }}</td>
+        {% if row.integration %}
+          <td>{{ row.integration.status }}</td>
+          <td>{{ row.integration.external_id }}</td>
+          <td>
+            {% if row.integration.last_synced_at %}{{ row.integration.last_synced_at }}
+            {% else %}Never{% endif %}
+          </td>
+          <td>
+            <form method="post" action="/integrations/{{ row.provider }}/sync">
+              <button type="submit">Sync now</button>
+            </form>
+            <form method="post" action="/integrations/{{ row.provider }}/disconnect">
+              <button type="submit">Disconnect</button>
+            </form>
+          </td>
+        {% else %}
+          <td>Not connected</td>
+          <td>&mdash;</td>
+          <td>&mdash;</td>
+          <td>&mdash;</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
