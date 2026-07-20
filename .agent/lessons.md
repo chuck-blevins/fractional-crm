@@ -218,3 +218,30 @@
 - Reminder reinforced: after EVERY aider run confirm the target actually changed
   (`wc -l` / `git diff --stat <path>`), not just that aider exited. "No stray at root" is necessary
   but NOT sufficient — this trap mis-targets an existing sibling, not the root.
+
+## CRB-32 (client detail + interactions timeline) — 2026-07-18
+- ROUTER-BY-ANALOGY CONFIRMED A SECOND TIME. Same recipe as CRB-31 (nearest existing `pages_*.py`
+  as `--read`, deltas as prose + exact signatures) produced a correct router on the first applied
+  pass, this time with no logic bounce at all. Treat this as the default method for CRB-33/34.
+- NEW PATH-TRAP FLAVOR (3rd) — "wrong-file fence via a path named in the STUB ITSELF". The router
+  stub's DOCSTRING read "STUB — not yet implemented. Specified by specs/task-crb32.md and pinned by
+  tests/web/test_interactions_ui.py." The 7B emitted the correct router, then a SECOND fence headed
+  `specs/task-crb32.md` containing filler prose. `--yes-always` auto-answered aider's "add
+  specs/task-crb32.md to the chat?" prompt, which started a whole second LLM round (11k sent, 35
+  received) and the FIRST round's edit was silently DISCARDED. Tells: no "Applied edit" line,
+  `git diff --stat` empty, and a second file-path header near the end of the log.
+  This GENERALISES the CRB-31 `{% extends %}` finding: it is not about Jinja inheritance, it is
+  about **any filename visible to the model**. RULE: a pre-stub must reference NO other file path
+  in any form — not an extends, not a docstring, not a comment. Keep stubs to a bare one-liner.
+  Belt-and-braces: pass `--map-tokens 0` on single-file runs so the repo-map contributes no
+  filenames either. Re-running the IDENTICAL prompt against a minimised stub applied cleanly.
+- TESTS PASSING != MARKUP CORRECT. The timeline fragment put the empty-state `<p>` inside the
+  `<ol>` — invalid HTML — and all 6 tests passed anyway, because they only assert that the string
+  "no interactions" is present. The reviewer caught it by reading the output, not by running red.
+  On accessibility-scoped stories, READ the generated markup; the assertions pin behaviour, not
+  validity. (Fixing it needed the exact `{% if %}`-wraps-`<ol>` structure inlined as code — prose
+  saying "instead of the `<ol>`" was ignored. Spoon-feed-as-code rule, again.)
+- USEFUL DIAGNOSTIC PATTERN: when a UI story fails, check whether the ROUTER is already correct by
+  probing the JSON API for the same data. Here the POST path persisted correctly (API read-back
+  returned the interaction) while the page rendered empty — which proved the router was done and
+  isolated all 5 remaining failures to the still-stubbed templates in one step.

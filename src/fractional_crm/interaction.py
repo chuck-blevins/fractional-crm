@@ -3,6 +3,9 @@ import re
 
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
 
+#: Allowed interaction kinds. Public so the web layer drives its <select> from the domain (CRB-32).
+KINDS = ("call", "email", "meeting", "note")
+
 class Interaction:
     """An interaction with a client. Dates are kept as ISO strings."""
 
@@ -31,8 +34,7 @@ class Interaction:
     @staticmethod
     def _validate_kind(kind: str) -> str:
         """Return kind if it is an allowed value; else raise ValueError."""
-        allowed_kinds = ["call", "email", "meeting", "note"]
-        if kind not in allowed_kinds:
+        if kind not in KINDS:
             raise ValueError(f"invalid kind: {kind!r}")
         return kind
 
