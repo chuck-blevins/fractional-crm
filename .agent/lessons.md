@@ -258,3 +258,30 @@ just the interior lines — otherwise the 7B reconstructs the block and loses th
 in the SAME run it ignored a second, unrelated instruction (remove a leaked `# Add this
 import` comment): the 7B reliably executes ~1 edit intent per run cleanly and drops extras,
 so keep review bounces to a single concern where possible, or fully spoon-feed every change.
+
+## 2026-07-20 — CRB-34: two aider whole-file hazards on an existing multi-route file
+
+**(a) Literal route placed AFTER a parametrized catch-all → wrong handler matches.**
+aider appended the new `@router.post("/import")` at the END of `pages_clients.py`, below the
+existing `@router.post("/{email}")` (update_client). FastAPI/Starlette match by registration
+order, not specificity, so `POST /clients/import` was captured by `/{email}` with `email="import"`
+and failed inside update_client (`ValueError: name cannot be empty`). Tell: the traceback lands in
+an UNRELATED handler whose path param equals your literal segment. Fix: literal routes must be
+registered before parametrized ones — either instruct aider to insert the handler above the
+`/{email}` group, or relocate it in review (a placement fix, not a logic change). Add a route-order
+check to the post-aider sweep whenever the file has a `/{param}` route.
+
+**(b) `--edit-format whole` silently rewrites functions you told it to leave alone.**
+The same run gratuitously rewrote `_form_response` (untouched by the request): it reverted the
+`templates.TemplateResponse(request, name, ctx)` call to the DEPRECATED old-style
+`TemplateResponse(name, {"request": request, ...})` — which raises `TypeError: unhashable type:
+'dict'` from Jinja's template cache — and renamed the context keys (`statuses`→`STATUSES`) the
+template reads. All 5 form/validity tests regressed while the targeted CRB-34 tests passed, so the
+targeted run "looked" done. RULE: after ANY whole-file aider edit of a multi-function file,
+`git diff HEAD <file>` the ENTIRE file and revert every hunk outside the intended scope — do not
+trust "leave other functions unchanged" in the prompt, and do not rely on the targeted tests alone;
+run the FULL suite. Consider narrower edits for multi-function files, but the diff-review is the
+load-bearing guard.
+
+**(c) It also dropped `File` from the fastapi import** (added `UploadFile`, not `File`, though the
+handler uses `File(...)`) — the recurring "7B lands ~1 edit-intent per run" drop. Reviewer-added.
