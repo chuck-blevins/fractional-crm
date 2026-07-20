@@ -1,0 +1,22 @@
+# CRB-35 — real Nexlayer deploy config (supersedes the hallucinated PR #13).
+# One Python pod serving the FastAPI app; SQLite persisted on a /data volume.
+application:
+  name: fractional-crm
+  pods:
+    - name: app
+      # Built from ./Dockerfile. Push the image to a registry (GHCR or the
+      # Nexlayer registry) and reference the pushed tag here.
+      # See docs/worklog/CRB-35.md for the build + deploy flow.
+      image: ghcr.io/chuck-blevins/fractional-crm:latest
+      path: /
+      servicePorts:
+        - 8000
+      vars:
+        CRM_ENV: production
+        CRM_DB_PATH: /data/crm.db
+        # CRM_SESSION_SECRET and CRM_PASSCODE_HASH are SECRETS — set them in the
+        # Nexlayer dashboard, never in this committed file.
+      volumes:
+        - name: crm-data
+          mountPath: /data
+          size: 1Gi
