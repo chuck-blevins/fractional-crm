@@ -19,6 +19,7 @@ from fractional_crm.web.pages_client_detail import router as client_detail_pages
 from fractional_crm.web.pages_teams import router as teams_pages_router
 from fractional_crm.web.pages_integrations import router as integrations_pages_router
 from fractional_crm.web.pages_interactions import router as interactions_pages_router
+from fractional_crm.web.pages_import_export import router as import_export_pages_router
 from fractional_crm.web.routers.clients import router as clients_router
 from fractional_crm.web.routers.engagements import router as engagements_router
 from fractional_crm.web.routers.interactions import router as interactions_router
@@ -71,6 +72,7 @@ def create_app() -> FastAPI:
     app.include_router(teams_pages_router, dependencies=gated)
     app.include_router(integrations_pages_router, dependencies=gated)
     app.include_router(interactions_pages_router, dependencies=gated)  # CRB-40 global /interactions feed
+    app.include_router(import_export_pages_router, dependencies=gated)  # CRB-41 import/export page
 
     # Every JSON API router requires an authenticated session.
     app.include_router(clients_router, dependencies=gated)

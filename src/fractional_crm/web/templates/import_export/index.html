@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Import / Export{% endblock %}
+{% block content %}
+<h1>Import / Export</h1>
+
+<section>
+  <h2>Export</h2>
+  <p><a href="/api/clients/csv/export">Download clients CSV</a></p>
+</section>
+
+<section>
+  <h2>Import</h2>
+  <form method="post" action="/clients/import" enctype="multipart/form-data">
+    <label for="file">Clients CSV or JSON file</label>
+    <input type="file" id="file" name="file" required>
+    <button type="submit">Import</button>
+  </form>
+</section>
+{% endblock %}
