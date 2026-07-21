@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Interactions{% endblock %}
+{% block content %}
+<h1>Interactions</h1>
+{% if interactions %}
+<ol>
+  {% for i in interactions %}
+    <li>
+      <time datetime="{{ i.date }}">{{ i.date }}</time>
+      <span class="kind">{{ i.kind }}</span>
+      <a href="/clients/{{ i.client_email }}">{{ i.client_email }}</a>
+      <p>{{ i.summary }}</p>
+    </li>
+  {% endfor %}
+</ol>
+{% else %}
+<p>No interactions yet</p>
+{% endif %}
+{% endblock %}

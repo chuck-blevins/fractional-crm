@@ -42,6 +42,16 @@ class SqliteInteractionRepository:
         rows = self.cursor.fetchall()
         return [Interaction(client_email=r[0], date=r[1], kind=r[2], summary=r[3]) for r in rows]
 
+    def list_all(self) -> List[Interaction]:
+        """List every interaction across all clients, newest first."""
+        self.cursor.execute("""
+            SELECT client_email, date, kind, summary
+            FROM interactions
+            ORDER BY date DESC, id DESC
+        """)
+        rows = self.cursor.fetchall()
+        return [Interaction(client_email=r[0], date=r[1], kind=r[2], summary=r[3]) for r in rows]
+
     def close(self) -> None:
         """Close the database connection."""
         self.connection.close()
