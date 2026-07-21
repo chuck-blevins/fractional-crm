@@ -10,6 +10,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# gosu lets the entrypoint drop from root to the app user after fixing volume
+# ownership (the mounted /data volume comes up root-owned at runtime).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gosu \
+    && rm -rf /var/lib/apt/lists/*
+
 # Dependencies first, for better layer caching.
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
@@ -18,10 +24,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 
 # Non-root runtime user; /data is the mount point for the SQLite volume.
+# The entrypoint chowns the mounted volume and drops to this user at startup,
+# so we do NOT set USER here (the container must start as root to fix perms).
 RUN useradd --create-home --uid 10001 appuser \
     && mkdir -p /data \
     && chown -R appuser:appuser /data /app
-USER appuser
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8000
 
@@ -29,4 +39,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"
 
+# Entrypoint fixes /data ownership then execs the CMD as the non-root appuser.
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["uvicorn", "fractional_crm.web.app:app", "--host", "0.0.0.0", "--port", "8000"]
